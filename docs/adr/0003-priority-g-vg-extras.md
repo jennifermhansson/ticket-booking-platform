@@ -1,0 +1,3 @@
+# Build in the order G → VG → extras
+
+We build the app from Ahmad's project proposal, but the course's grading criteria decide what earns the grade, and the proposal asks for more than the criteria do. Work therefore follows a strict order: all G criteria first, then all VG criteria, then extras from the proposal that earn no points (Redis, the message queue, idempotent purchases, documented load test runs, rate limiting, a waiting room). No extra is started before every G and VG criterion is in place, even where the proposal calls it a core requirement. Where the proposal lists something as a bonus that the criteria require anyway (Prometheus and Grafana, HPA, the web frontend), the criteria win and it is built in its G or VG phase.
