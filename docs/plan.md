@@ -112,29 +112,11 @@ Run `kubectl top nodes` on 10-30. If RAM is above about 80 %, upgrade the VPS th
 
 - Pair-program the infrastructure skeleton.
 - Daily teach-back: whoever built something explains it to the other.
-- One branch per change, reviewed by the other. Questions in the defence are individual.
+- One issue, one branch and one PR per task, reviewed by the other. Questions in the defence are individual.
 
-## Checklist
+## Tracking
 
-**G**
-- [ ] `https://api.<domain>` and `https://cdn.<domain>` answer
-- [ ] Merge to `main` → test → build → deploy, automatically
-- [ ] Unit, integration (including the concurrency test) and e2e tests run in the pipeline
-- [ ] A daily backup runs, and a restore is tested
-- [ ] Grafana shows metrics and logs under k6 traffic
-
-**VG**
-- [ ] At least 2 pods behind a load balancer
-- [ ] A rollout under k6 load gives 0 errors
-- [ ] The HPA scales up under load and back down afterwards
-
-**Extras**
-- [ ] Crash test (pod deleted under load)
-- [ ] Idempotency key
-- [ ] Saved normal and spike runs
-- [ ] Sweeper
-- [ ] Queue + Redis
-- [ ] Rate limiting and waiting room
+Each task in this plan is a GitHub issue, grouped into milestones: `G` (due 10-30), `VG` (11-01), `Defence & submission` (11-08) and `Extras` (11-08). Every issue has a *Done when* line. This file holds the reasoning and order; the issues hold the tasks and their state.
 
 ## Later, with the CI pipeline
 

@@ -6,12 +6,13 @@ Exam project for Chas Academy course 6 (Advanced fullstack, test & DevOps), buil
 
 ## Where things live
 
-- [docs/plan.md](docs/plan.md): phases, timeline and checklist. Work follows its priority order: G criteria → VG criteria → extras.
+- [docs/plan.md](docs/plan.md): phases, timeline and the reasoning behind them. Work follows its priority order: G criteria → VG criteria → extras.
+- GitHub Issues: every task, with owner, milestone (`G`, `VG`, `Defence & submission`, `Extras`) and a *Done when* line. Read them with `gh issue list --milestone <name>` and `gh issue view <n>`. When asked what to work on next, pick the lowest open issue in the earliest unfinished milestone.
 - [GLOSSARY.md](GLOSSARY.md): domain terms. Use these words in code, docs and conversation.
 - [docs/adr/](docs/adr/): decisions with real trade-offs. Read the relevant ADR before changing something it covers.
 - `docs/runbooks/`: operational procedures (restore, incident handling), added as they are written.
 
-Two people share this repo, each with their own Claude. Claude's memory is personal to one machine, so every project decision, status change or trade-off goes into these repo files, where both Claudes read it.
+Two people share this repo, each with their own Claude. Claude's memory is personal to one machine, so every project decision, status change or trade-off goes into these repo files or the issues, where both Claudes read it.
 
 ## Stack
 
@@ -27,7 +28,8 @@ Two people share this repo, each with their own Claude. Claude's memory is perso
 
 ## Git
 
-- One branch per change; `main` only receives merged PRs, and the other person reviews each PR.
+- One issue, one branch and one PR per task; `main` only receives merged PRs, and the other person reviews each PR. The PR body says `Closes #<n>`, so the issue closes on merge.
+- Work that has no issue yet gets one first (`gh issue create` with a milestone, labels and a *Done when* line).
 - Conventional commits: `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`.
 - Show git commands in modern syntax: `git switch`, `git switch -c`, `git restore`, `git restore --staged`.
 - Update `STATUS.md` (and add an ADR if one is due) in the same PR as the work; `/update-status` does this at the end of a session.

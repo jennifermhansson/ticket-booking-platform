@@ -6,24 +6,9 @@ Last updated: 2026-10-20
 
 **Next step:** confirm the VPS specs and buy the domain, then install k3s and serve `https://api.<domain>/health`.
 
-## In progress
+**Blockers:** none.
 
-| What | Who |
-| --- | --- |
-| Infrastructure skeleton (pair programming) | Philip + Jennifer |
-
-## Open items
-
-- [ ] Check Jennifer's VPS: at least 2 vCPU, nothing else running, SSH access for both, 2–4 GB swap added
-- [ ] Buy the domain and point `api`, `cdn` and `grafana` at the VPS
-- [ ] Add the ticket number CSV (`biljettnummer_examination.csv`, AMX-00001 to AMX-05000) to the repo
-- [ ] Ask Ahmad to confirm the priority order (G → VG → extras) and that Redis, the queue and the documented load test runs may be skipped if time runs out
-- [ ] Ask Ahmad what applies to AI use in the exam
-- [ ] Enable branch protection on `main` (require a PR and one review)
-
-## Blockers
-
-None.
+Tasks, owners and progress live in GitHub Issues: `gh issue list --milestone G` (milestones `G`, `VG`, `Defence & submission`, `Extras`). This file holds only what issues can't: the current phase, the next step and blockers.
 
 ## Key dates
 
