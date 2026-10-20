@@ -44,8 +44,8 @@ A phase starts only when the one before it is done (see [ADR 0003](adr/0003-prio
 ## Phase 1: G criteria (2026-10-20 → 10-30)
 
 **1. Infrastructure skeleton (10-20 → 10-23)**
-- VPS: check that Jennifer's 4 GB server has at least 2 vCPU and nothing else running, and that we both have SSH access. Add 2–4 GB swap.
-- Buy the domain. Point `api`, `cdn` and `grafana` at the server.
+- VPS: a dedicated Contabo VPS (4 vCPU, 8 GB RAM) replaces Jennifer's 4 GB server, so nothing else runs on it ([ADR 0004](adr/0004-separate-contabo-vps.md)). We both need SSH access. Decide whether 8 GB still needs swap. See [the server runbook](runbooks/server-setup.md).
+- Domain: `philipzachariasson.dev`. Point `api`, `cdn` and `grafana` at the server.
 - k3s with Traefik and cert-manager: `https://api.<domain>/health` answers, and `cdn.<domain>` serves a static page.
 - GitHub Actions: test → build → push to GHCR → deploy on merge to `main`.
 - ✅ 10-23: a merge to `main` shows up live. If not, ask Ahmad for help straight away.
@@ -98,13 +98,13 @@ In this order. They earn no points, so stop when time runs out.
 - **11-04:** oral defence.
 - **11-05 → 11-08:** first the README (api, cdn and dashboard URLs) and an architecture diagram, then more extras if we want.
 
-## RAM on 4 GB
+## RAM on 8 GB
 
-Phases 1–2 need about 2.5–3 GB, and the queue and Redis in phase 3 add about 0.2 GB. Keep the stack lean:
+Phases 1–2 need about 2.5–3 GB, and the queue and Redis in phase 3 add about 0.2 GB. 8 GB leaves headroom for the load tests ([ADR 0004](adr/0004-separate-contabo-vps.md)), but keep the stack lean:
 - Prometheus with 2–3 days of retention and no Alertmanager.
 - Loki in single-binary mode.
 - Resource limits on everything.
-- Swap.
+- Swap only if we decide it is needed (#2).
 
 Run `kubectl top nodes` on 10-30. If RAM is above about 80 %, upgrade the VPS then.
 
