@@ -1,0 +1,3 @@
+# One row per ticket, reserved with SKIP LOCKED
+
+Every ticket number from the CSV is its own row in `tickets`, rather than a single "available count". A reservation takes one available row inside a transaction with `SELECT ... FOR UPDATE SKIP LOCKED`, so concurrent requests on different backend replicas each lock a different row instead of queueing behind the same one. Overselling is then prevented by the database itself, shared by all replicas, and a UNIQUE constraint on `purchases.ticket_id` makes a ticket in two purchases structurally impossible. Every read of ticket state (reserve, list, purchase) treats an expired reservation as available, so tickets are released without a background worker.
