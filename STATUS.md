@@ -4,7 +4,7 @@ Last updated: 2026-10-22
 
 **Phase:** 1 (G criteria), step 1: infrastructure skeleton. Target: a merge to `main` shows up live by 2026-10-23.
 
-**Next step:** add Jennifer's SSH key, set the DNS records, then install k3s and serve `https://api.<domain>/health`. The firewall is on; after k3s is installed, check that pods still reach each other and DNS (#4). What is done on the server so far is in [docs/runbooks/server-setup.md](docs/runbooks/server-setup.md).
+**Next step:** Jennifer reviews PR #38 and sends Philip her SSH `.pub` (#2); Philip adds the DNS A records `tickets` and `*.tickets` at name.com (#3). Then install k3s and serve `https://api.<domain>/health` (#4), including the check that pods still reach each other and DNS with the firewall on. What is done on the server so far is in [docs/runbooks/server-setup.md](docs/runbooks/server-setup.md).
 
 **Domain:** `<domain>` in the docs means `tickets.philipzachariasson.dev`, so the backend is `api.tickets.philipzachariasson.dev`. The root domain stays free for other use.
 
