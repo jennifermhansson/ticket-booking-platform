@@ -29,6 +29,7 @@ Two people share this repo, each with their own Claude. Claude's memory is perso
 ## Git
 
 - One issue, one branch and one PR per task; `main` only receives merged PRs, and the other person reviews each PR. The PR body says `Closes #<n>`, so the issue closes on merge.
+- Branch names are `<issue>-<slug>`, for example `46-adr-single-node`, which is what GitHub's "Create a branch" on an issue generates.
 - Work that has no issue yet gets one first (`gh issue create` with a milestone, labels and a *Done when* line).
 - Conventional commits: `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`.
 - Show git commands in modern syntax: `git switch`, `git switch -c`, `git restore`, `git restore --staged`.
