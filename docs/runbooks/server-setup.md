@@ -5,7 +5,8 @@ How the VPS was set up, so it can be checked or rebuilt. The server's IP address
 ## Server
 
 - Provider: Contabo VPS, bought for this project (replaces the plan to use Jennifer's 4 GB server; see [ADR 0004](../adr/0004-separate-contabo-vps.md)).
-- Ubuntu 24.04 LTS, 4 vCPU (AMD EPYC), 8 GB RAM, 96 GB disk, no swap.
+- Ubuntu 24.04 LTS, 4 vCPU (AMD EPYC), 8 GB RAM, 96 GB disk.
+- No swap, decided in #2: Kubernetes expects nodes without swap by default, and about 7 GB is free before k3s. Revisit if memory runs short under load testing.
 - SSH host key (ED25519): `SHA256:iXg82TKzj5txBOyJrohMOIsspi/Xvr/AitWOcJmVVqU`. Check that your first `ssh` connection shows this fingerprint before you answer `yes`.
 
 ## SSH access
@@ -32,7 +33,7 @@ ufw has been active since 2026-10-22 and starts on boot. The rules:
 - `ufw limit 22/tcp` (SSH with rate limiting), allow `80/tcp` (Let's Encrypt HTTP challenge, redirect to HTTPS) and `443/tcp`.
 - Allow from `10.42.0.0/16` (pods) and `10.43.0.0/16` (services), as the k3s docs require when ufw is on.
 - Keep `6443` (Kubernetes API) closed. Run `kubectl` over SSH or an SSH tunnel, and deploy from CI the same way.
-- Kubernetes NodePort and hostPort rules bypass ufw, so expose everything through Traefik on 80/443 and don't use NodePort services.
+- Kubernetes NodePort and hostPort rules bypass ufw, so expose everything through Traefik on 80/443 and don't use NodePort services. A `LoadBalancer` service gets NodePorts too unless told otherwise, which is why Traefik's are turned off (see [Traefik without NodePorts](#traefik-without-nodeports)).
 
 Check them with `ufw status verbose`.
 
@@ -51,4 +52,42 @@ Don't reboot while the timer runs: the timer doesn't survive a reboot, but the e
 
 ## DNS
 
-The project uses the subdomain `tickets.philipzachariasson.dev` (DNS at name.com), so `api.tickets.philipzachariasson.dev`, `cdn.tickets.…` and `grafana.tickets.…`. Two A records point at the VPS: `tickets` and the wildcard `*.tickets`, so a new host needs no DNS change. The records are not set yet. Only A records (IPv4) for now: k3s runs IPv4-only by default, so AAAA records would send some visitors to an address nothing answers on. `.dev` is HTTPS-only in browsers, which cert-manager covers.
+The project uses the subdomain `tickets.philipzachariasson.dev` (DNS at name.com), so `api.tickets.philipzachariasson.dev`, `cdn.tickets.…` and `grafana.tickets.…`. Two A records point at the VPS: `tickets` and the wildcard `*.tickets`, so a new host needs no DNS change (TTL 300, set 2026-10-22). The wildcard covers one level only: `api.tickets.…` matches, `a.b.tickets.…` does not. Check a record against name.com's own nameserver, which skips every cache: `dig +short @ns1bqx.name.com api.tickets.philipzachariasson.dev A`. Only A records (IPv4) for now: k3s runs IPv4-only by default, so AAAA records would send some visitors to an address nothing answers on. `.dev` is HTTPS-only in browsers, which cert-manager covers.
+
+## k3s
+
+k3s `v1.37.1+k3s1` was installed on 2026-10-22 (#4), pinned so that a rebuild gets the same version:
+
+```
+curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.37.1+k3s1 sh -
+```
+
+- It runs as the systemd service `k3s` and starts on boot. `kubectl` on the server, as root, uses the admin kubeconfig `/etc/rancher/k3s/k3s.yaml`.
+- The bundled add-ons are kept: Traefik (ingress on 80/443), ServiceLB (the `svclb-traefik` pod that binds the host's ports 80 and 443), CoreDNS, local-path-provisioner (volumes) and metrics-server (needed by the autoscaler).
+- To upgrade, rerun the install command with the new version and update this section. `/usr/local/bin/k3s-uninstall.sh` removes k3s completely, including every workload and volume.
+- Manifests in `k8s/cluster/` are applied by hand: `ssh root@<server-ip> 'kubectl apply -f -' < k8s/cluster/<file>.yaml`.
+
+### Checking pod networking with ufw on
+
+ufw also filters traffic between pods, so after any firewall change check that pods still reach each other and DNS. Run a web pod and a client pod, then clean up:
+
+```
+kubectl run nettest-web --image=nginx:1.27-alpine --restart=Never
+kubectl run nettest-client --image=busybox:1.36 --restart=Never --rm -it -- sh
+#   nslookup kubernetes.default.svc.cluster.local   internal DNS
+#   nslookup github.com                             external DNS
+#   wget -qO- http://<nettest-web pod IP>           pod to pod
+kubectl delete pod nettest-web
+```
+
+A blocked check hangs until it times out. All four passed on 2026-10-22.
+
+### Traefik without NodePorts
+
+Kubernetes gives every `LoadBalancer` service a NodePort per port, because cloud load balancers send their traffic to the nodes on those ports. kube-proxy opens them with its own iptables rules, before ufw sees the traffic, so Traefik was reachable from the internet on two random ports above 30000 even though ufw does not allow them.
+
+We don't need them: ServiceLB forwards ports 80 and 443 to Traefik's ClusterIP, not to the NodePorts (see `DEST_IPS` in the `svclb-traefik` pod's environment). [`k8s/cluster/traefik-config.yaml`](../../k8s/cluster/traefik-config.yaml) sets `allocateLoadBalancerNodePorts: false` on Traefik's service. It is a `HelmChartConfig`, which k3s merges into the values of its own Traefik chart, so the setting survives k3s upgrades.
+
+- **Existing NodePorts are not removed by the flag.** After applying it the first time, remove them by hand: `kubectl -n kube-system patch svc traefik --type=json -p '[{"op":"remove","path":"/spec/ports/0/nodePort"},{"op":"remove","path":"/spec/ports/1/nodePort"}]'`. Do the same after a rebuild: the installer starts Traefik before this file can be applied.
+- **Check from outside, not with `ufw status`.** From your own machine, `curl http://api.<domain>` should answer and `curl http://api.<domain>:<old NodePort>` should not. A scan such as `nmap -p 1-65535 <server-ip>` should show only 22, 80 and 443.
+- **Before setting `externalTrafficPolicy: Local`** on Traefik's service (to log visitors' real IPs), check how ServiceLB forwards in that mode: it may need the NodePorts back.
