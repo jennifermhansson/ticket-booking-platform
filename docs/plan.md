@@ -34,7 +34,7 @@ A phase starts only when the one before it is done (see [ADR 0003](adr/0003-prio
 
 ### Two trade-offs in the priority order
 
-- **k3s from day one, not Docker Compose** ([ADR 0001](adr/0001-k3s-from-day-one.md)).
+- **k3s from day one, not Docker Compose** ([ADR 0001](adr/0001-k3s-from-day-one.md)), on a single node with redundancy only at the pod level ([ADR 0005](adr/0005-single-node-no-node-level-ha.md)).
 - **The app's core counts as G.** The criteria don't say what the app does, but there has to be an app to deploy and test. The core is the smallest working version of the proposal:
   - CSV import of the tickets
   - ticket status
