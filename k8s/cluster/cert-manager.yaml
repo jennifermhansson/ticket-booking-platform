@@ -1,0 +1,17 @@
+---
+# k3s's Helm controller installs this chart, like it installs Traefik, so
+# cert-manager needs no Helm on the server. Change the version here to upgrade.
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: cert-manager
+  namespace: kube-system
+spec:
+  repo: https://charts.jetstack.io
+  chart: cert-manager
+  version: v1.21.2
+  targetNamespace: cert-manager
+  createNamespace: true
+  valuesContent: |-
+    crds:
+      enabled: true

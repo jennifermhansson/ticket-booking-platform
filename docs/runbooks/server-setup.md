@@ -91,3 +91,14 @@ We don't need them: ServiceLB forwards ports 80 and 443 to Traefik's ClusterIP, 
 - **Existing NodePorts are not removed by the flag.** After applying it the first time, remove them by hand: `kubectl -n kube-system patch svc traefik --type=json -p '[{"op":"remove","path":"/spec/ports/0/nodePort"},{"op":"remove","path":"/spec/ports/1/nodePort"}]'`. Do the same after a rebuild: the installer starts Traefik before this file can be applied.
 - **Check from outside, not with `ufw status`.** From your own machine, `curl http://api.<domain>` should answer and `curl http://api.<domain>:<old NodePort>` should not. A scan such as `nmap -p 1-65535 <server-ip>` should show only 22, 80 and 443.
 - **Before setting `externalTrafficPolicy: Local`** on Traefik's service (to log visitors' real IPs), check how ServiceLB forwards in that mode: it may need the NodePorts back.
+
+## cert-manager
+
+cert-manager `v1.21.2` issues the Let's Encrypt certificates. [`k8s/cluster/cert-manager.yaml`](../../k8s/cluster/cert-manager.yaml) is a `HelmChart` that k3s's Helm controller installs into the `cert-manager` namespace, with its CRDs, so there is no Helm on the server. To upgrade, change `version` in that file and apply it.
+
+[`k8s/cluster/cluster-issuer.yaml`](../../k8s/cluster/cluster-issuer.yaml) holds two `ClusterIssuer`s that solve the HTTP-01 challenge through Traefik on port 80:
+
+- `letsencrypt-staging`: untrusted certificates but generous rate limits. Point a new Ingress at it first, with the annotation `cert-manager.io/cluster-issuer: letsencrypt-staging`.
+- `letsencrypt-prod`: trusted certificates, with strict rate limits (5 failed validations per host per hour). Switch the annotation to it once staging issues a certificate.
+
+The ACME accounts have no email address: Let's Encrypt no longer sends expiry emails, and cert-manager renews 30 days before expiry. Check with `kubectl get clusterissuer` (both `Ready`) and, per Ingress, `kubectl -n tickets get certificate`.
