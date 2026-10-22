@@ -29,7 +29,7 @@ The file name starts with `00-` on purpose: the image ships `50-cloud-init.conf`
 
 ufw has been active since 2026-10-22 and starts on boot. The rules:
 
-- Deny all incoming, allow all outgoing.
+- Deny all incoming, allow all outgoing. `deny` drops packets silently rather than rejecting them (`reject`). We keep it: every legitimate client uses an open port, and a scanner learns less from silence than from a reset. The cost is that our own port scans are slow (see below).
 - `ufw limit 22/tcp` (SSH with rate limiting), allow `80/tcp` (Let's Encrypt HTTP challenge, redirect to HTTPS) and `443/tcp`.
 - Allow from `10.42.0.0/16` (pods) and `10.43.0.0/16` (services), as the k3s docs require when ufw is on.
 - Keep `6443` (Kubernetes API) closed. Run `kubectl` over SSH or an SSH tunnel, and deploy from CI the same way.
@@ -116,3 +116,26 @@ cert-manager `v1.21.2` issues the Let's Encrypt certificates. [`k8s/cluster/cert
 - `letsencrypt-prod`: trusted certificates, with strict rate limits (5 failed validations per host per hour). Switch the annotation to it once staging issues a certificate.
 
 The ACME accounts have no email address: Let's Encrypt no longer sends expiry emails, and cert-manager renews 30 days before expiry. Check with `kubectl get clusterissuer` (both `Ready`) and, per Ingress, `kubectl -n tickets get certificate`.
+
+## The tickets namespace and the backend
+
+[`k8s/cluster/namespace.yaml`](../../k8s/cluster/namespace.yaml) creates the `tickets` namespace, applied by hand like the rest of `k8s/cluster/`. [`k8s/backend.yaml`](../../k8s/backend.yaml) holds the backend's Deployment, Service and Ingress. It names no namespace and keeps the literal `IMAGE_TAG` in its image line, because CI fills in both, as [ADR 0006](../adr/0006-deploy-from-ci-over-ssh.md) describes. To apply it by hand, do what CI does:
+
+```
+sed 's/IMAGE_TAG/<tag>/' k8s/backend.yaml | ssh root@<server-ip> 'kubectl apply -n tickets -f -'
+```
+
+- The Ingress serves `api.<domain>` with a `letsencrypt-prod` certificate in the secret `backend-tls`. It was first issued from staging, then switched to prod, on 2026-10-22.
+- Readiness and liveness probes call `/health` on port 3000, so a pod gets traffic only once the app answers and is restarted if it stops answering.
+- Plain HTTP is not redirected to HTTPS yet. Browsers use HTTPS anyway, since `.dev` is on the HSTS preload list, but `curl` and k6 do not.
+
+### Until CI pushes the first image
+
+The backend image is not on GHCR until the CI workflow (#6) runs, so the Deployment runs a copy of the backend built from `main` on a laptop and loaded straight into k3s:
+
+```
+docker buildx build --platform linux/amd64 -t ghcr.io/jennifermhansson/ticket-booking-platform-backend:placeholder-<short sha> --load backend
+docker save ghcr.io/jennifermhansson/ticket-booking-platform-backend:placeholder-<short sha> | ssh root@<server-ip> 'k3s ctr images import -'
+```
+
+Then apply `k8s/backend.yaml` with `placeholder-<short sha>` as the tag. The image is the real backend, so the manifest and probes are the same ones CI uses. The `placeholder-` prefix can never match a commit SHA, so the first CI deploy pulls the real image from GHCR and needs no cleanup. The image left in k3s's store can be removed with `k3s crictl rmi` afterwards.
