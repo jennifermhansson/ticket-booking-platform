@@ -45,7 +45,7 @@ A phase starts only when the one before it is done (see [ADR 0003](adr/0003-prio
 
 **1. Infrastructure skeleton (10-20 → 10-23)**
 - VPS: a dedicated Contabo VPS (4 vCPU, 8 GB RAM) replaces Jennifer's 4 GB server, so nothing else runs on it ([ADR 0004](adr/0004-separate-contabo-vps.md)). We both need SSH access. Decide whether 8 GB still needs swap. See [the server runbook](runbooks/server-setup.md).
-- Domain: `philipzachariasson.dev`. Point `api`, `cdn` and `grafana` at the server.
+- Domain: `<domain>` is `tickets.philipzachariasson.dev`, a project subdomain, so the personal root domain stays free. Point `api`, `cdn` and `grafana` under it at the server.
 - k3s with Traefik and cert-manager: `https://api.<domain>/health` answers, and `cdn.<domain>` serves a static page.
 - GitHub Actions: test → build → push to GHCR → deploy on merge to `main`.
 - ✅ 10-23: a merge to `main` shows up live. If not, ask Ahmad for help straight away.
