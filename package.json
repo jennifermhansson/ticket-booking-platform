@@ -1,0 +1,11 @@
+{
+  "name": "ticket-booking-platform",
+  "private": true,
+  "scripts": {
+    "lint": "biome check .",
+    "format": "biome check --write ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.6.2"
+  }
+}
