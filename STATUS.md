@@ -1,12 +1,12 @@
 # Status
 
-Last updated: 2026-10-20
+Last updated: 2026-10-22
 
 **Phase:** 1 (G criteria), step 1: infrastructure skeleton. Target: a merge to `main` shows up live by 2026-10-23.
 
-**Next step:** add Jennifer's SSH key, set the DNS records, enable the firewall, then install k3s and serve `https://api.<domain>/health`. What is done on the server so far, and the firewall plan, is in [docs/runbooks/server-setup.md](docs/runbooks/server-setup.md).
+**Next step:** add Jennifer's SSH key, set the DNS records, then install k3s and serve `https://api.<domain>/health`. The firewall is on; after k3s is installed, check that pods still reach each other and DNS (#35). What is done on the server so far is in [docs/runbooks/server-setup.md](docs/runbooks/server-setup.md).
 
-**Open decision:** the domain is `philipzachariasson.dev`, a personal domain. Either the project gets its own subdomain (`tickets.philipzachariasson.dev`, `api.tickets.…`, `cdn.tickets.…`, with a `*.tickets` wildcard record) and the root domain stays free for other use, or the whole domain points at the VPS (`api.philipzachariasson.dev` and so on). Not decided yet.
+**Domain:** `<domain>` in the docs means `tickets.philipzachariasson.dev`, so the backend is `api.tickets.philipzachariasson.dev`. The root domain stays free for other use.
 
 **Blockers:** none.
 
