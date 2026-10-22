@@ -139,3 +139,38 @@ docker save ghcr.io/jennifermhansson/ticket-booking-platform-backend:placeholder
 ```
 
 Then apply `k8s/backend.yaml` with `placeholder-<short sha>` as the tag. The image is the real backend, so the manifest and probes are the same ones CI uses. The `placeholder-` prefix can never match a commit SHA, so the first CI deploy pulls the real image from GHCR and needs no cleanup. The image left in k3s's store can be removed with `k3s crictl rmi` afterwards.
+
+## The deploy user
+
+CI deploys over SSH as the Linux user `deploy`, which runs `kubectl` with a ServiceAccount that can change only the `tickets` namespace ([ADR 0006](../adr/0006-deploy-from-ci-over-ssh.md)). Set up on 2026-10-22.
+
+**Kubernetes side.** [`k8s/cluster/deploy-rbac.yaml`](../../k8s/cluster/deploy-rbac.yaml) holds the `deploy` ServiceAccount, a Role, its RoleBinding and the Secret `deploy-token`:
+
+- The Role allows get, list, watch, create, update and patch on Deployments, Services and Ingresses, and read-only access to ReplicaSets, Pods, pod logs and Events, which `kubectl rollout status` and debugging need. It allows no delete, no Secrets and nothing outside `tickets`. When a manifest in `k8s/` gets a new kind (a StatefulSet for Postgres, a HorizontalPodAutoscaler), add it to the Role first, or CI's apply is refused.
+- `deploy-token` is a `kubernetes.io/service-account-token` Secret, so the token does not expire. Since Kubernetes 1.24 a ServiceAccount gets no lasting token by itself, and `kubectl create token` expires within hours.
+- Check what it may do: `kubectl auth can-i --list -n tickets --as=system:serviceaccount:tickets:deploy`.
+
+**Linux side.** `deploy` was created with `adduser --disabled-password` (key login only, no sudo, not in any admin group). Its kubeconfig is `/home/deploy/.kube/config` (mode 600), built from `deploy-token`: server `https://127.0.0.1:6443`, the cluster CA embedded, default namespace `tickets`. If the token Secret is ever recreated, rebuild it:
+
+```
+KC=/home/deploy/.kube/config; CA=$(mktemp)
+kubectl -n tickets get secret deploy-token -o jsonpath='{.data.ca\.crt}' | base64 -d > $CA
+kubectl config --kubeconfig=$KC set-cluster k3s --server=https://127.0.0.1:6443 --certificate-authority=$CA --embed-certs=true
+kubectl config --kubeconfig=$KC set-credentials deploy --token="$(kubectl -n tickets get secret deploy-token -o jsonpath='{.data.token}' | base64 -d)"
+kubectl config --kubeconfig=$KC set-context deploy --cluster=k3s --user=deploy --namespace=tickets
+kubectl config --kubeconfig=$KC use-context deploy
+rm $CA; chown deploy:deploy $KC; chmod 600 $KC
+```
+
+**`KUBECONFIG` comes from sshd.** k3s's bundled `kubectl` falls back to the root-only `/etc/rancher/k3s/k3s.yaml` even when `~/.kube/config` exists, and CI's non-interactive SSH commands never read `.bashrc` or `.profile`. So `/etc/ssh/sshd_config.d/99-deploy.conf` sets the variable for this user only:
+
+```
+Match User deploy
+    SetEnv KUBECONFIG=/home/deploy/.kube/config
+```
+
+Check it with `sshd -T -C user=deploy,host=x,addr=203.0.113.1 | grep setenv`; the same command with `user=root` must show no `setenv` and the same password settings. After editing, run `sshd -t`, then `systemctl reload ssh`, and test a fresh login before closing your session.
+
+**SSH key.** CI's public key goes in `/home/deploy/.ssh/authorized_keys` with the `restrict` option in front (`restrict ssh-ed25519 AAAA… github-actions-deploy`). It blocks port forwarding, agent forwarding and an interactive terminal, so the key can only run commands as `deploy`.
+
+**Verified on 2026-10-22** with a temporary key, removed afterwards: with the host key pinned from `ssh-keyscan` (it matches the fingerprint at the top of this file) and no `~/.ssh/config`, the three ADR 0006 steps (`kubectl apply --dry-run=server`, `kubectl apply`, `kubectl rollout status`) all succeed as `deploy`, and `kubectl -n kube-system get pods` is refused.
