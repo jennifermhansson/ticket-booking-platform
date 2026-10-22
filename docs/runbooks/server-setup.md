@@ -37,6 +37,20 @@ ufw has been active since 2026-10-22 and starts on boot. The rules:
 
 Check them with `ufw status verbose`.
 
+The SSH rate limit rejects an address that opens 6 new connections to port 22 within 30 seconds, and every rejected attempt restarts the window. A burst of separate `ssh` commands from a script trips it, so wait a minute without retrying and it clears. The CI deploy should stay well under 6 connections per run.
+
+### Checking open ports from outside
+
+ufw is only part of the picture: kube-proxy and hostPorts add iptables rules of their own that act before ufw. Scan from your own machine (the SYN scan needs `sudo` and takes about 2 minutes; without `sudo` nmap falls back to a connect scan that takes about 25):
+
+```
+sudo nmap -Pn -sS -p- -T4 --min-rate 1000 --max-retries 1 --stats-every 30s api.<domain>
+```
+
+The scan on 2026-10-22, after the Traefik NodePorts were removed, showed only `22`, `80` and `443` open and the other 65,532 ports `filtered` (dropped by ufw, none `closed`). Any other open port, or any `closed` one, needs explaining.
+
+On the server, `ss -tln` also lists `6443` (Kubernetes API) and `10250` (kubelet) on all interfaces: k3s binds them there, and ufw is what keeps them private. Both require authentication, but they are reachable while ufw is off, for example during the 5 minutes of a rollback timer. Ports 80 and 443 do not show up in `ss` at all, because ServiceLB's hostPorts are iptables rules rather than a listening process.
+
 ### Changing rules that could lock us out
 
 Opening a new port can't lock anyone out, so it needs no precautions. A change to the SSH rule, the default policies or a rule deletion can, so use a rollback timer: a one-off systemd timer that turns the firewall off after 5 minutes unless it is cancelled.
@@ -89,7 +103,7 @@ Kubernetes gives every `LoadBalancer` service a NodePort per port, because cloud
 We don't need them: ServiceLB forwards ports 80 and 443 to Traefik's ClusterIP, not to the NodePorts (see `DEST_IPS` in the `svclb-traefik` pod's environment). [`k8s/cluster/traefik-config.yaml`](../../k8s/cluster/traefik-config.yaml) sets `allocateLoadBalancerNodePorts: false` on Traefik's service. It is a `HelmChartConfig`, which k3s merges into the values of its own Traefik chart, so the setting survives k3s upgrades.
 
 - **Existing NodePorts are not removed by the flag.** After applying it the first time, remove them by hand: `kubectl -n kube-system patch svc traefik --type=json -p '[{"op":"remove","path":"/spec/ports/0/nodePort"},{"op":"remove","path":"/spec/ports/1/nodePort"}]'`. Do the same after a rebuild: the installer starts Traefik before this file can be applied.
-- **Check from outside, not with `ufw status`.** From your own machine, `curl http://api.<domain>` should answer and `curl http://api.<domain>:<old NodePort>` should not. A scan such as `nmap -p 1-65535 <server-ip>` should show only 22, 80 and 443.
+- **Check from outside, not with `ufw status`.** See [Checking open ports from outside](#checking-open-ports-from-outside).
 - **Before setting `externalTrafficPolicy: Local`** on Traefik's service (to log visitors' real IPs), check how ServiceLB forwards in that mode: it may need the NodePorts back.
 
 ## cert-manager
