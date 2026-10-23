@@ -1,0 +1,17 @@
+---
+# Overrides values of the Traefik chart that k3s installs. k3s merges this
+# into its own chart values, so the change survives k3s upgrades.
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    service:
+      spec:
+        # A LoadBalancer service gets NodePorts by default, and kube-proxy
+        # opens them before ufw sees the traffic. ServiceLB forwards 80/443
+        # to Traefik's ClusterIP, not to the NodePorts, so they only add
+        # open ports. Recheck before setting externalTrafficPolicy: Local.
+        allocateLoadBalancerNodePorts: false

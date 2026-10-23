@@ -24,7 +24,8 @@ Two people share this repo, each with their own Claude. Claude's memory is perso
 - Infrastructure: single-node k3s on a VPS (Traefik, cert-manager), images on GHCR, deploys from GitHub Actions.
 - Load testing: k6.
 - Layout: monorepo with `backend/`, `frontend/`, `k8s/`, `loadtests/`.
-- File names are camelCase (`ticketService.ts`); inside a module slice the folder is the namespace, so files are just `service.ts`, `repository.ts` and so on.
+- TypeScript file names are camelCase (`ticketService.ts`); inside a module slice the folder is the namespace, so files are just `service.ts`, `repository.ts` and so on.
+- Kubernetes manifests in `k8s/` are kebab-case and named after the object they hold (`traefik-config.yaml`, `cluster-issuer.yaml`), since Kubernetes object names are lowercase with hyphens.
 
 ## Git
 

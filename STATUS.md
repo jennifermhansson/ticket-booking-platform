@@ -1,14 +1,14 @@
 # Status
 
-Last updated: 2026-10-22
+Last updated: 2026-10-23
 
 **Phase:** 1 (G criteria), step 1: infrastructure skeleton. Target: a merge to `main` shows up live by 2026-10-23.
 
 **Next step (2026-10-23, working remotely):** reach the checkpoint, a merge to `main` that shows up live on `https://api.<domain>/health`. Both halves build against the names in [ADR 0006](docs/adr/0006-deploy-from-ci-over-ssh.md), so neither waits for the other until the sync point.
 
-- **Philip:** DNS A records `tickets` and `*.tickets` at name.com first, since certificates need them (#3). Then k3s, Traefik and cert-manager with `/health` over HTTPS, the pod and DNS check with the firewall on, and the `deploy` user and its three Actions secrets (#4). Then the cdn page if there is time (#7). What is done on the server so far is in [docs/runbooks/server-setup.md](docs/runbooks/server-setup.md).
-- **Jennifer:** the first half of the CI/CD workflow (#6) is in its PR: Biome, actionlint, tests, build and push to GHCR. After it merges, make the GHCR package public (the cluster pulls from it on the first deploy). Then the deploy step, which waits for the sync point and uses one SSH connection because of the firewall's rate limit. In the meantime, the CSV import and `tickets` schema against a local Postgres (#9).
-- **Sync point:** Philip tells Jennifer when k3s is up and the deploy secrets are set. A test merge then proves the checkpoint.
+- **Philip:** #4 is done: k3s with Traefik and cert-manager, `https://api.<domain>/health` over trusted HTTPS (a placeholder build until CI deploys the first image), and on 2026-10-23 the `deploy` user, CI's SSH key and the three Actions secrets (`DEPLOY_HOST`, `DEPLOY_SSH_KEY`, `DEPLOY_KNOWN_HOSTS`), verified with a login as CI makes it. Its PR #51 is rebased on `main` after #50 and still a draft. Next: take #51 out of draft for Jennifer's review and merge it, since the deploy step needs `k8s/backend.yaml` on `main`. Then the cdn page if there is time (#7). Everything on the server is in [docs/runbooks/server-setup.md](docs/runbooks/server-setup.md).
+- **Jennifer:** the first half of #6 merged on 2026-10-23 (#50): Biome, actionlint, tests, and a build that pushes the backend image to GHCR on every merge to `main`. The package is public. Next, the deploy step: the secrets are set, and it can be tested once #51 puts `k8s/backend.yaml` on `main`. The SSH rate limit rejects 6 connections within 30 seconds from one address, so keep the deploy to a few SSH calls and don't retry in a loop. Next, the CSV import and `tickets` schema against a local Postgres (#9).
+- **Sync point:** reached on 2026-10-23. A test merge with the deploy step then proves the checkpoint.
 - **After that:** #8 and #43 wait for #4 and #6; #10–#12 follow #9.
 
 **Domain:** `<domain>` in the docs means `tickets.philipzachariasson.dev`, so the backend is `api.tickets.philipzachariasson.dev`. The root domain stays free for other use.

@@ -1,0 +1,57 @@
+---
+# The identity CI deploys as (ADR 0006). It can change only the tickets
+# namespace, and only the kinds k8s/*.yaml holds: add a rule here when a
+# manifest gets a new kind, or CI's apply is refused.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: deploy
+  namespace: tickets
+---
+# A token that does not expire, for the deploy user's kubeconfig.
+# Kubernetes fills in the token and CA once this Secret exists.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: deploy-token
+  namespace: tickets
+  annotations:
+    kubernetes.io/service-account.name: deploy
+type: kubernetes.io/service-account-token
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: deploy
+  namespace: tickets
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  # Read-only, for `kubectl rollout status` and for debugging a failed deploy.
+  - apiGroups: ["apps"]
+    resources: ["replicasets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "events"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: deploy
+  namespace: tickets
+subjects:
+  - kind: ServiceAccount
+    name: deploy
+    namespace: tickets
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: deploy

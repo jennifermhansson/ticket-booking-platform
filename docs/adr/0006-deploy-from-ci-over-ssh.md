@@ -20,7 +20,7 @@ These are the names #4 (cluster and manifests) and #6 (the workflow) both build 
 | Namespace | `tickets` |
 | Deployment and container | `backend` and `backend` |
 | Manifests CI applies | `k8s/*.yaml`: namespaced resources only, each file starting with `---` so they can be concatenated |
-| Manifests applied by hand | `k8s/cluster/`: the namespace, the cert-manager `ClusterIssuer` and the deploy user's RBAC |
+| Manifests applied by hand | `k8s/cluster/`: the namespace, the cert-manager install and its `ClusterIssuer`s, the Traefik override and the deploy user's RBAC |
 | Image line in the Deployment | `ghcr.io/jennifermhansson/ticket-booking-platform-backend:IMAGE_TAG`; the workflow replaces `IMAGE_TAG` with the SHA |
 | SSH user | `deploy` |
 | Actions secrets | `DEPLOY_HOST` (the server IP), `DEPLOY_SSH_KEY` (the deploy user's private key), `DEPLOY_KNOWN_HOSTS` (the server's `known_hosts` line) |
