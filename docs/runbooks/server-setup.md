@@ -129,9 +129,9 @@ sed 's/IMAGE_TAG/<tag>/' k8s/backend.yaml | ssh root@<server-ip> 'kubectl apply 
 - Readiness and liveness probes call `/health` on port 3000, so a pod gets traffic only once the app answers and is restarted if it stops answering.
 - Plain HTTP is not redirected to HTTPS yet. Browsers use HTTPS anyway, since `.dev` is on the HSTS preload list, but `curl` and k6 do not.
 
-### Until CI pushes the first image
+### Until CI deploys the first image
 
-The backend image is not on GHCR until the CI workflow (#6) runs, so the Deployment runs a copy of the backend built from `main` on a laptop and loaded straight into k3s:
+CI has pushed the backend image to GHCR on every merge to `main` since 2026-10-23, and the package is public. Until the deploy step (#6) applies the manifests, though, the Deployment runs a copy of the backend built from `main` on a laptop and loaded straight into k3s:
 
 ```
 docker buildx build --platform linux/amd64 -t ghcr.io/jennifermhansson/ticket-booking-platform-backend:placeholder-<short sha> --load backend
