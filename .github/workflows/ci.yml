@@ -62,6 +62,7 @@ jobs:
       - uses: docker/build-push-action@v6.15.0
         with:
           context: backend
+          build-args: BUN_VERSION=${{ env.BUN_VERSION }}
           push: ${{ github.event_name == 'push' }}
           tags: ${{ env.IMAGE }}:${{ github.sha }}
           cache-from: type=gha
