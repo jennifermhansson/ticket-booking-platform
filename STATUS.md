@@ -1,14 +1,15 @@
 # Status
 
-Last updated: 2026-10-23
+Last updated: 2026-10-26
 
 **Phase:** 1 (G criteria), step 2: app core + frontend (2026-10-24 → 10-26). Step 1 is done: the checkpoint was proven on 2026-10-23, when the merge of #54 ended with a green `deploy` job and the cluster's backend image tagged with that merge's SHA (`e85600b`). Every merge to `main` now deploys to `https://api.<domain>`.
 
 **Next step:**
 
 - **Philip:** the cdn page (#7), deployed by the pipeline. Everything on the server is in [docs/runbooks/server-setup.md](docs/runbooks/server-setup.md).
-- **Jennifer:** the CSV import and `tickets` schema against a local Postgres (#9), then #10–#12.
-- **Unowned and unblocked:** #8 (Postgres in k3s with migrations), which #10–#12 need in the cluster, and #43 (validate manifests in CI). Pick owners.
+- **Decided on 2026-10-26:** migrations use dbmate and run as a Kubernetes Job before each rollout ([ADR 0007](docs/adr/0007-migrations-with-dbmate-as-a-job.md)). #8 and #9 build on it, so it is merged before either.
+- **Jennifer:** the `tickets` schema as the first dbmate migration and the CSV import as a Bun script, against a local Postgres (#9), then #10–#12.
+- **Unowned and unblocked:** #8 (Postgres in k3s and the migration Job), which #10–#12 need in the cluster, and #43 (validate manifests in CI). Pick owners.
 - **Branch protection (#21)** is not on yet, and only the repo owner (Jennifer) can turn it on.
 
 **Domain:** `<domain>` in the docs means `tickets.philipzachariasson.dev`, so the backend is `api.tickets.philipzachariasson.dev`. The root domain stays free for other use.
