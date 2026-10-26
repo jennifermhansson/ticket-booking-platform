@@ -31,6 +31,8 @@ The deploy job does, in order:
 2. Pipe them over SSH into `kubectl apply -n tickets -f -`.
 3. Run `kubectl -n tickets rollout status` for each Deployment with `--timeout=120s`, so the job fails when the new pods never become ready.
 
+[ADR 0007](0007-migrations-with-dbmate-as-a-job.md) adds two steps before these: CI applies `k8s/database/` and runs the migration Job from `k8s/jobs/`, and the backend is rolled out only once that Job has completed.
+
 ## Consequences
 
 - **Philip, in #4:** create the `deploy` user, a `ServiceAccount` with a `Role` and `RoleBinding` limited to `tickets`, and a kubeconfig for that ServiceAccount in the deploy user's home. Generate an SSH key pair for CI, add the public key to the deploy user and the three secrets to the repo, and record the deploy user in the server runbook.
