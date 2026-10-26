@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "bun --watch src/server.ts",
     "start": "bun src/server.ts",
+    "migrate": "dbmate --wait --migration-lock --no-dump-schema up",
+    "import": "bun db/importTickets.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit"
   },
@@ -13,6 +15,7 @@
   },
   "devDependencies": {
     "@types/bun": "^1.4.3",
+    "dbmate": "2.37.0",
     "typescript": "^7.0.2"
   }
 }
