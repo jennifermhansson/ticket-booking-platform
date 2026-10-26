@@ -10,7 +10,8 @@ Last updated: 2026-10-26
 - **Jennifer, right after #7 merges:** the first deploy fails with `ImagePullBackOff`, because GHCR creates the frontend package as private. Make it public in its package settings, then re-run the failed jobs of that workflow run.
 - **Decided on 2026-10-26:** migrations use dbmate and run as a Kubernetes Job before each rollout ([ADR 0007](docs/adr/0007-migrations-with-dbmate-as-a-job.md)). #8 and #9 build on it.
 - **Jennifer:** #9 is in its PR: the `tickets` table as the first dbmate migration and the CSV import as a Bun script, verified against a local Postgres. Next: #10, then #11 and #12. They run locally first, but need #8 for the cluster.
-- **Unowned and unblocked:** #8 (Postgres in k3s and the migration Job), which now also has to run `bun run import` as the second step and put `db/` with the CSV in the image (see its comment), and #43 (validate manifests in CI). Pick owners.
+- **Philip:** #8, in one PR on top of #9. It puts Postgres in the cluster as a StatefulSet on a `local-path` volume, with the Secret `postgres` created by hand ([runbook](docs/runbooks/server-setup.md#postgres)), and adds the migration Job (`dbmate up`, then the CSV import). CI sends `k8s/` to the server over one SSH connection and runs a committed `k8s/deploy.sh` there, which waits for the Job before the rollout.
+- **Unowned and unblocked:** #43 (validate manifests in CI). Pick an owner.
 - **Branch protection (#21)** is not on yet, and only the repo owner (Jennifer) can turn it on.
 
 **Domain:** `<domain>` in the docs means `tickets.philipzachariasson.dev`, so the backend is `api.tickets.philipzachariasson.dev`. The root domain stays free for other use.

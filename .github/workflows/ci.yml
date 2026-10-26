@@ -92,13 +92,14 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
       # One SSH connection only: ufw rejects 6 new connections within 30 seconds.
+      # The database manifests go first, so Postgres exists before the app (ADR 0007).
       - name: Apply manifests and wait for the rollout
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
         run: |
           sed -i "s|:IMAGE_TAG|:${GITHUB_SHA}|" k8s/*.yaml
-          cat k8s/*.yaml | ssh -o BatchMode=yes -o ConnectTimeout=15 "deploy@${DEPLOY_HOST}" \
-            'kubectl apply -n tickets -f - && kubectl -n tickets rollout status deployment/backend --timeout=120s && kubectl -n tickets rollout status deployment/frontend --timeout=120s'
+          cat k8s/database/*.yaml k8s/*.yaml | ssh -o BatchMode=yes -o ConnectTimeout=15 "deploy@${DEPLOY_HOST}" \
+            'kubectl apply -n tickets -f - && kubectl -n tickets rollout status statefulset/postgres --timeout=120s && kubectl -n tickets rollout status deployment/backend --timeout=120s && kubectl -n tickets rollout status deployment/frontend --timeout=120s'
       - name: Check /health over HTTPS
         run: curl --fail --silent --show-error --retry 5 --retry-delay 3 https://api.tickets.philipzachariasson.dev/health
       # --retry-all-errors also retries TLS errors: until cert-manager has issued

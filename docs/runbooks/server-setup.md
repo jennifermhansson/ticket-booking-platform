@@ -137,6 +137,37 @@ sed 's/IMAGE_TAG/<tag>/' k8s/backend.yaml | ssh root@<server-ip> 'kubectl apply 
 - Readiness and liveness probes call `/` on port 8080.
 - The GHCR package `ticket-booking-platform-frontend` must be public, like the backend's, or k3s cannot pull it. The first push from CI creates it as private, so the first deploy fails with `ImagePullBackOff`: Jennifer (the owner) makes the package public in its settings, then re-runs the failed jobs of that workflow run.
 
+### Postgres
+
+[`k8s/database/postgres.yaml`](../../k8s/database/postgres.yaml) holds Postgres as a StatefulSet with one replica and the headless Service `postgres`, so the database is `postgres:5432` from inside the namespace (#8). CI applies it before `k8s/*.yaml` and waits for `rollout status statefulset/postgres` ([ADR 0007](../adr/0007-migrations-with-dbmate-as-a-job.md)).
+
+- The image is pinned to `postgres:16.15-alpine`, the same major version as `backend/compose.yaml`.
+- The data lives on a 5Gi `local-path` volume (the PVC `data-postgres-0`), a folder under `/var/lib/rancher/k3s/storage/` on the server. It survives pod restarts and redeploys, but not `k3s-uninstall.sh` or a lost server: that is what backups (#17) are for. The size cannot be changed in the manifest once the StatefulSet exists, and local-path cannot grow a volume.
+- `PGDATA` is a subfolder of the volume, `pgdata`, as the Postgres image recommends for mounted volumes.
+- The readiness probe runs `pg_isready` over TCP, so the pod is only `Ready` once initialisation is finished and the real server listens.
+- There is no liveness probe: restarting a database that is slow under load would make things worse.
+
+**The Secret `postgres`** is created by hand, once, before the first deploy that applies the StatefulSet. It holds the superuser password and the URL the backend and the migration Job use. Generate the password on the server, so it never leaves it:
+
+```
+PW=$(openssl rand -hex 24)
+kubectl -n tickets create secret generic postgres \
+  --from-literal=POSTGRES_PASSWORD="$PW" \
+  --from-literal=DATABASE_URL="postgres://postgres:$PW@postgres:5432/tickets?sslmode=disable"
+unset PW
+```
+
+- Hex needs no URL encoding, so the password goes straight into `DATABASE_URL`.
+- `?sslmode=disable`, because Postgres in the cluster has no TLS (ADR 0007).
+- `POSTGRES_PASSWORD` is only read when the volume is empty. Changing the Secret later does not change the password of the existing database: change it in Postgres with `ALTER USER postgres PASSWORD '…'` and update both keys of the Secret.
+
+Check it:
+
+```
+kubectl -n tickets get statefulset/postgres pvc/data-postgres-0 pod/postgres-0
+kubectl -n tickets exec postgres-0 -- psql -U postgres -d tickets -c 'SELECT 1'
+```
+
 ### Deploying without CI
 
 Since 2026-10-23 (#54), every merge to `main` deploys: CI pushes the images to GHCR, where the packages are public, and the `deploy` job applies `k8s/*.yaml` with the commit SHA as the tag. Before that, and whenever CI can't deploy, the Deployment can run a copy of the backend built from `main` on a laptop and loaded straight into k3s:
@@ -154,7 +185,7 @@ CI deploys over SSH as the Linux user `deploy`, which runs `kubectl` with a Serv
 
 **Kubernetes side.** [`k8s/cluster/deploy-rbac.yaml`](../../k8s/cluster/deploy-rbac.yaml) holds the `deploy` ServiceAccount, a Role, its RoleBinding and the Secret `deploy-token`:
 
-- The Role allows get, list, watch, create, update and patch on Deployments, Services and Ingresses, and read-only access to ReplicaSets, Pods, pod logs and Events, which `kubectl rollout status` and debugging need. It allows no delete, no Secrets and nothing outside `tickets`. When a manifest in `k8s/` gets a new kind (a StatefulSet for Postgres, a HorizontalPodAutoscaler), add it to the Role first, or CI's apply is refused.
+- The Role allows get, list, watch, create, update and patch on Deployments, StatefulSets, Services and Ingresses, get, list, watch and create on Jobs (the migration Job gets a new name on every deploy, so it is never updated), and read-only access to ReplicaSets, Pods, pod logs and Events, which `kubectl rollout status` and debugging need. It allows no delete, no Secrets and nothing outside `tickets`. When a manifest in `k8s/` gets a new kind (a HorizontalPodAutoscaler, a CronJob), add it to the Role first, or CI's apply is refused.
 - `deploy-token` is a `kubernetes.io/service-account-token` Secret, so the token does not expire. Since Kubernetes 1.24 a ServiceAccount gets no lasting token by itself, and `kubectl create token` expires within hours.
 - Check what it may do: `kubectl auth can-i --list -n tickets --as=system:serviceaccount:tickets:deploy`.
 
