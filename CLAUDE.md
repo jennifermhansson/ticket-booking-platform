@@ -20,6 +20,7 @@ Two people share this repo, each with their own Claude. Claude's memory is perso
 - Backend: Bun + Fastify + TypeScript (strict). Layers: `routes → controller → service → repository → db`, with no layer skipped.
 - Module slice: `backend/src/modules/<name>/{route,controller,service,repository,mapper,schema,types}.ts`.
 - Database: PostgreSQL via Bun's built-in client (`import { sql } from 'bun'`).
+- Migrations: dbmate, with plain SQL files in `backend/db/migrations/`, run as a Kubernetes Job before each rollout ([ADR 0007](docs/adr/0007-migrations-with-dbmate-as-a-job.md)).
 - Frontend: React + TypeScript + Vite, built to static files served from `cdn.<domain>`.
 - Infrastructure: single-node k3s on a VPS (Traefik, cert-manager), images on GHCR, deploys from GitHub Actions.
 - Load testing: k6.
