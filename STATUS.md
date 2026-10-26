@@ -1,12 +1,13 @@
 # Status
 
-Last updated: 2026-10-23
+Last updated: 2026-10-26
 
 **Phase:** 1 (G criteria), step 2: app core + frontend (2026-10-24 → 10-26). Step 1 is done: the checkpoint was proven on 2026-10-23, when the merge of #54 ended with a green `deploy` job and the cluster's backend image tagged with that merge's SHA (`e85600b`). Every merge to `main` now deploys to `https://api.<domain>`.
 
 **Next step:**
 
-- **Philip:** the cdn page (#7), deployed by the pipeline. Everything on the server is in [docs/runbooks/server-setup.md](docs/runbooks/server-setup.md).
+- **Philip:** the cdn page (#7) is in review. CI builds a second image (`ticket-booking-platform-frontend`) and deploys it to `https://cdn.<domain>` ([ADR 0007](docs/adr/0007-static-files-from-nginx-pod.md)). Everything on the server is in [docs/runbooks/server-setup.md](docs/runbooks/server-setup.md).
+- **Jennifer, right after #7 merges:** the first deploy fails with `ImagePullBackOff`, because GHCR creates the frontend package as private. Make it public in its package settings, then re-run the failed jobs of that workflow run.
 - **Jennifer:** the CSV import and `tickets` schema against a local Postgres (#9), then #10–#12.
 - **Unowned and unblocked:** #8 (Postgres in k3s with migrations), which #10–#12 need in the cluster, and #43 (validate manifests in CI). Pick owners.
 - **Branch protection (#21)** is not on yet, and only the repo owner (Jennifer) can turn it on.
