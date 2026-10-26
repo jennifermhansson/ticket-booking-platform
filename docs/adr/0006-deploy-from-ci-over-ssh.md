@@ -21,17 +21,17 @@ These are the names #4 (cluster and manifests) and #6 (the workflow) both build 
 | Deployments and containers | `backend` and `frontend`, each with one container of the same name |
 | Manifests CI applies | `k8s/*.yaml`: namespaced resources only, each file starting with `---` so they can be concatenated; since #8 also `k8s/database/` and `k8s/jobs/` ([ADR 0007](0007-migrations-with-dbmate-as-a-job.md)) |
 | Manifests applied by hand | `k8s/cluster/`: the namespace, the cert-manager install and its `ClusterIssuer`s, the Traefik override and the deploy user's RBAC |
-| Image line in each Deployment | `ghcr.io/jennifermhansson/ticket-booking-platform-<app>:IMAGE_TAG`; the deploy replaces `IMAGE_TAG` with the SHA (since #8, `k8s/deploy.sh` on the server) |
+| Image line in each Deployment | `ghcr.io/jennifermhansson/ticket-booking-platform-<app>:IMAGE_TAG`; `k8s/deploy.sh` replaces `IMAGE_TAG` with the SHA |
 | SSH user | `deploy` |
 | Actions secrets | `DEPLOY_HOST` (the server IP), `DEPLOY_SSH_KEY` (the deploy user's private key), `DEPLOY_KNOWN_HOSTS` (the server's `known_hosts` line) |
 
-The deploy job does, in order:
+The deploy job sends `k8s/` as a tar stream over one SSH connection and runs [`k8s/deploy.sh`](../../k8s/deploy.sh) on the server with the commit SHA. The script, in order:
 
-1. Replace `IMAGE_TAG` in the manifests with the commit SHA.
-2. Pipe them over SSH into `kubectl apply -n tickets -f -`.
-3. Run `kubectl -n tickets rollout status` for each Deployment with `--timeout=120s`, so the job fails when the new pods never become ready.
+1. Replaces `IMAGE_TAG` in the manifests with the commit SHA.
+2. Applies them with `kubectl apply -n tickets -f -`.
+3. Runs `kubectl -n tickets rollout status` for each Deployment with `--timeout=120s`, so the deploy fails when the new pods never become ready.
 
-[ADR 0007](0007-migrations-with-dbmate-as-a-job.md) adds two steps before these: CI applies `k8s/database/` and runs the migration Job from `k8s/jobs/`, and the backend is rolled out only once that Job has completed. Since #8 all the steps run in `k8s/deploy.sh` on the server, which also replaces `IMAGE_TAG`: CI sends `k8s/` over the same single SSH connection.
+[ADR 0007](0007-migrations-with-dbmate-as-a-job.md) adds the database and the migrations before step 2: the script applies `k8s/database/`, runs the migration Job from `k8s/jobs/`, and applies the app only once that Job has completed.
 
 ## Consequences
 
