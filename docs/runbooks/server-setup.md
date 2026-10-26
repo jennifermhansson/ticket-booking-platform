@@ -119,7 +119,7 @@ The ACME accounts have no email address: Let's Encrypt no longer sends expiry em
 
 ## The tickets namespace and the backend
 
-[`k8s/cluster/namespace.yaml`](../../k8s/cluster/namespace.yaml) creates the `tickets` namespace, applied by hand like the rest of `k8s/cluster/`. [`k8s/backend.yaml`](../../k8s/backend.yaml) holds the backend's Deployment, Service and Ingress. It names no namespace and keeps the literal `IMAGE_TAG` in its image line, because CI fills in both, as [ADR 0006](../adr/0006-deploy-from-ci-over-ssh.md) describes. To apply it by hand, do what CI does:
+[`k8s/cluster/namespace.yaml`](../../k8s/cluster/namespace.yaml) creates the `tickets` namespace, applied by hand like the rest of `k8s/cluster/`. [`k8s/backend.yaml`](../../k8s/backend.yaml) holds the backend's Deployment, Service and Ingress. It names no namespace and keeps the literal `IMAGE_TAG` in its image line, because the deploy fills in both ([ADR 0006](../adr/0006-deploy-from-ci-over-ssh.md)): `kubectl apply -n tickets`, and `k8s/deploy.sh` replaces the tag. To apply only this file by hand:
 
 ```
 sed 's/IMAGE_TAG/<tag>/' k8s/backend.yaml | ssh root@<server-ip> 'kubectl apply -n tickets -f -'
@@ -135,7 +135,7 @@ sed 's/IMAGE_TAG/<tag>/' k8s/backend.yaml | ssh root@<server-ip> 'kubectl apply 
 
 - The Ingress serves `cdn.<domain>` with a `letsencrypt-prod` certificate in the secret `frontend-tls`, issued straight from prod, since the prod issuer was already proven on `api.<domain>`.
 - Readiness and liveness probes call `/` on port 8080.
-- The GHCR package `ticket-booking-platform-frontend` must be public, like the backend's, or k3s cannot pull it. The first push from CI creates it as private, so the first deploy fails with `ImagePullBackOff`: Jennifer (the owner) makes the package public in its settings, then re-runs the failed jobs of that workflow run.
+- The GHCR package `ticket-booking-platform-frontend` is public, like the backend's, so k3s pulls it without an `imagePullSecret`. If a new package ever comes up private, the deploy fails with `ImagePullBackOff`: the owner (Jennifer) makes it public in its settings and re-runs the failed jobs.
 
 ### Postgres
 
@@ -194,7 +194,7 @@ tar -c k8s | ssh root@<server-ip> 'd=$(mktemp -d) && tar -x -C "$d" && bash "$d/
 
 ### Deploying without CI
 
-Since 2026-10-23 (#54), every merge to `main` deploys: CI pushes the images to GHCR, where the packages are public, and the `deploy` job applies `k8s/*.yaml` with the commit SHA as the tag. Before that, and whenever CI can't deploy, the Deployment can run a copy of the backend built from `main` on a laptop and loaded straight into k3s:
+Since 2026-10-23 (#54), every merge to `main` deploys: CI pushes the images to GHCR, where the packages are public, and the `deploy` job runs `k8s/deploy.sh` on the server with the commit SHA as the tag (see [Migrations and the deploy script](#migrations-and-the-deploy-script)). Before that, and whenever CI can't deploy, the Deployment can run a copy of the backend built from `main` on a laptop and loaded straight into k3s:
 
 ```
 docker buildx build --platform linux/amd64 -t ghcr.io/jennifermhansson/ticket-booking-platform-backend:placeholder-<short sha> --load backend

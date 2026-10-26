@@ -19,9 +19,9 @@ These are the names #4 (cluster and manifests) and #6 (the workflow) both build 
 | Image tag | the full commit SHA (`${{ github.sha }}`), never `latest` |
 | Namespace | `tickets` |
 | Deployments and containers | `backend` and `frontend`, each with one container of the same name |
-| Manifests CI applies | `k8s/*.yaml`: namespaced resources only, each file starting with `---` so they can be concatenated |
+| Manifests CI applies | `k8s/*.yaml`: namespaced resources only, each file starting with `---` so they can be concatenated; since #8 also `k8s/database/` and `k8s/jobs/` ([ADR 0007](0007-migrations-with-dbmate-as-a-job.md)) |
 | Manifests applied by hand | `k8s/cluster/`: the namespace, the cert-manager install and its `ClusterIssuer`s, the Traefik override and the deploy user's RBAC |
-| Image line in each Deployment | `ghcr.io/jennifermhansson/ticket-booking-platform-<app>:IMAGE_TAG`; the workflow replaces `IMAGE_TAG` with the SHA |
+| Image line in each Deployment | `ghcr.io/jennifermhansson/ticket-booking-platform-<app>:IMAGE_TAG`; the deploy replaces `IMAGE_TAG` with the SHA (since #8, `k8s/deploy.sh` on the server) |
 | SSH user | `deploy` |
 | Actions secrets | `DEPLOY_HOST` (the server IP), `DEPLOY_SSH_KEY` (the deploy user's private key), `DEPLOY_KNOWN_HOSTS` (the server's `known_hosts` line) |
 
