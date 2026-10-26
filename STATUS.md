@@ -6,7 +6,7 @@ Last updated: 2026-10-26
 
 **Next step:**
 
-- **Philip:** the cdn page (#7) is in review. CI builds a second image (`ticket-booking-platform-frontend`) and deploys it to `https://cdn.<domain>` ([ADR 0007](docs/adr/0007-static-files-from-nginx-pod.md)). Everything on the server is in [docs/runbooks/server-setup.md](docs/runbooks/server-setup.md).
+- **Philip:** the cdn page (#7) is in review. CI builds a second image (`ticket-booking-platform-frontend`) and deploys it to `https://cdn.<domain>` ([ADR 0008](docs/adr/0008-static-files-from-nginx-pod.md)). Everything on the server is in [docs/runbooks/server-setup.md](docs/runbooks/server-setup.md).
 - **Jennifer, right after #7 merges:** the first deploy fails with `ImagePullBackOff`, because GHCR creates the frontend package as private. Make it public in its package settings, then re-run the failed jobs of that workflow run.
 - **Jennifer:** the CSV import and `tickets` schema against a local Postgres (#9), then #10–#12.
 - **Unowned and unblocked:** #8 (Postgres in k3s with migrations), which #10–#12 need in the cluster, and #43 (validate manifests in CI). Pick owners.

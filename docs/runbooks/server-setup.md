@@ -131,7 +131,7 @@ sed 's/IMAGE_TAG/<tag>/' k8s/backend.yaml | ssh root@<server-ip> 'kubectl apply 
 
 ### The cdn page
 
-[`k8s/frontend.yaml`](../../k8s/frontend.yaml) holds the frontend's Deployment, Service and Ingress, built and deployed the same way as the backend (#7). [ADR 0007](../adr/0007-static-files-from-nginx-pod.md) explains why the files get a pod of their own. The image is nginx (`nginxinc/nginx-unprivileged`, non-root, port 8080) with `frontend/public/` copied in at build time, so a changed page ships as a new image and the deploy Role needs no ConfigMaps.
+[`k8s/frontend.yaml`](../../k8s/frontend.yaml) holds the frontend's Deployment, Service and Ingress, built and deployed the same way as the backend (#7). [ADR 0008](../adr/0008-static-files-from-nginx-pod.md) explains why the files get a pod of their own. The image is nginx (`nginxinc/nginx-unprivileged`, non-root, port 8080) with `frontend/public/` copied in at build time, so a changed page ships as a new image and the deploy Role needs no ConfigMaps.
 
 - The Ingress serves `cdn.<domain>` with a `letsencrypt-prod` certificate in the secret `frontend-tls`, issued straight from prod, since the prod issuer was already proven on `api.<domain>`.
 - Readiness and liveness probes call `/` on port 8080.
