@@ -1,0 +1,467 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Architecture map</title>
+<style>
+  :root {
+    --bg: #f6f5f1;
+    --surface: #ffffff;
+    --text: #1d1d1b;
+    --muted: #6b6a64;
+    --line: #c9c7bf;
+    --line-strong: #8a887f;
+    --done: #2f7d4f;
+    --done-bg: #e5f2ea;
+    --progress: #b26b00;
+    --progress-bg: #fbefd9;
+    --planned: #8a887f;
+    --kind-client: #6d5bd0;
+    --kind-network: #2c7fb8;
+    --kind-k8s: #1f9e89;
+    --kind-api: #d0572f;
+    --kind-data: #9c4f96;
+    --kind-ci: #4f6b8a;
+    --kind-ops: #b8860b;
+    --focus: #2c7fb8;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #161614;
+      --surface: #22221f;
+      --text: #ecebe6;
+      --muted: #a3a29b;
+      --line: #45443f;
+      --line-strong: #77766e;
+      --done: #6cc28f;
+      --done-bg: #1d3326;
+      --progress: #f0ab3c;
+      --progress-bg: #3a2c14;
+      --planned: #77766e;
+      --kind-client: #a597ff;
+      --kind-network: #6bb6ec;
+      --kind-k8s: #4fd1b9;
+      --kind-api: #ff8a62;
+      --kind-data: #d68ad0;
+      --kind-ci: #93acc8;
+      --kind-ops: #e2b54a;
+      --focus: #6bb6ec;
+      color-scheme: dark;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  header { padding: 20px 16px 8px; max-width: 1400px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .source { color: var(--muted); font-size: 13px; }
+
+  .progress { display: flex; flex-wrap: wrap; gap: 12px; margin: 14px 0 6px; }
+  .meter { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; min-width: 150px; }
+  .meter b { display: block; font-size: 13px; }
+  .meter .bar { height: 6px; background: var(--line); border-radius: 3px; margin: 6px 0 4px; overflow: hidden; }
+  .meter .bar span { display: block; height: 100%; background: var(--done); }
+  .meter small { color: var(--muted); }
+
+  .unmapped { font-size: 13px; color: var(--progress); margin: 6px 0; }
+  .unmapped a { color: inherit; }
+
+  nav { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 16px; max-width: 1400px; margin: 0 auto; }
+  nav button.tab {
+    font: inherit; border: 1px solid var(--line); background: var(--surface); color: var(--text);
+    padding: 6px 14px; border-radius: 999px; cursor: pointer;
+  }
+  nav button.tab[aria-selected="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
+  nav label { margin-left: auto; font-size: 14px; color: var(--muted); display: flex; gap: 6px; align-items: center; }
+
+  .intro { max-width: 1400px; margin: 0 auto; padding: 4px 16px 0; color: var(--muted); }
+
+  main { max-width: 1400px; margin: 0 auto; padding: 8px 16px 32px; }
+  .canvas-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+  .canvas { position: relative; margin: 16px; }
+  .canvas svg { position: absolute; inset: 0; overflow: visible; }
+  .canvas svg path { fill: none; stroke: var(--line-strong); stroke-width: 1.5; }
+  .canvas svg path.future { stroke: var(--line); stroke-dasharray: 5 5; }
+  .canvas svg text { font-size: 11px; fill: var(--muted); paint-order: stroke; stroke: var(--surface); stroke-width: 4px; }
+
+  .node {
+    position: absolute; width: 168px; height: 64px; padding: 8px 10px 8px 14px;
+    text-align: left; font: inherit; color: var(--text); cursor: pointer;
+    background: var(--surface); border: 1.5px solid var(--line-strong); border-radius: 10px;
+    overflow: hidden;
+  }
+  .node::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--kind); }
+  .node .label { display: block; font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 26px; }
+  .node .sub { display: block; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .node .badge { position: absolute; top: 6px; right: 6px; font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 4px; border: 1px solid currentColor; color: var(--muted); }
+  .node.done { background: var(--done-bg); border-color: var(--done); }
+  .node.in-progress { background: var(--progress-bg); border-color: var(--progress); }
+  .node.planned { border-style: dashed; border-color: var(--planned); opacity: 0.72; }
+  .node.in-progress .dot { position: absolute; right: 9px; bottom: 9px; width: 8px; height: 8px; border-radius: 50%; background: var(--progress); animation: pulse 1.6s ease-in-out infinite; }
+  .node[aria-pressed="true"] { outline: 3px solid var(--focus); outline-offset: 2px; opacity: 1; }
+  .node:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  @keyframes pulse { 50% { opacity: 0.25; } }
+  @media (prefers-reduced-motion: reduce) { .node.in-progress .dot { animation: none; } }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 12px; font-size: 13px; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .swatch { width: 18px; height: 12px; border-radius: 3px; border: 1.5px solid; display: inline-block; }
+  .swatch.done { background: var(--done-bg); border-color: var(--done); }
+  .swatch.in-progress { background: var(--progress-bg); border-color: var(--progress); }
+  .swatch.planned { border-style: dashed; border-color: var(--planned); }
+  .kind-chip { width: 5px; height: 14px; border-radius: 2px; display: inline-block; }
+
+  aside {
+    position: fixed; top: 0; right: 0; bottom: 0; width: min(420px, 100%);
+    background: var(--surface); border-left: 1px solid var(--line);
+    padding: 20px 20px 32px; overflow-y: auto; box-shadow: -8px 0 24px rgb(0 0 0 / 0.12);
+    transform: translateX(105%); transition: transform 0.18s ease-out;
+  }
+  aside.open { transform: none; }
+  aside h2 { margin: 0 32px 4px 0; font-size: 20px; }
+  aside h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin: 18px 0 6px; }
+  aside ul { margin: 0; padding-left: 18px; }
+  aside li { margin: 3px 0; }
+  aside a { color: var(--focus); }
+  aside .close { position: absolute; top: 14px; right: 14px; font: inherit; font-size: 20px; background: none; border: 0; color: var(--muted); cursor: pointer; }
+  .pill { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; margin-right: 6px; }
+  .pill.done { background: var(--done-bg); color: var(--done); }
+  .pill.in-progress { background: var(--progress-bg); color: var(--progress); }
+  .pill.planned { background: var(--bg); color: var(--muted); }
+  .issue-state { font-size: 12px; color: var(--muted); }
+  @media (max-width: 640px) {
+    aside { top: auto; height: 70vh; width: 100%; border-left: 0; border-top: 1px solid var(--line); border-radius: 14px 14px 0 0; transform: translateY(105%); }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Ticket booking platform: architecture map</h1>
+  <div class="source" id="source">Loading issue status…</div>
+  <div class="progress" id="progress"></div>
+  <div class="unmapped" id="unmapped" hidden></div>
+</header>
+<nav id="tabs" role="tablist"></nav>
+<p class="intro" id="intro"></p>
+<main>
+  <div class="canvas-wrap"><div class="canvas" id="canvas"></div></div>
+  <div class="legend" id="legend"></div>
+</main>
+<aside id="panel" aria-live="polite" aria-label="Details"></aside>
+
+<script src="model.js"></script>
+<script src="snapshot.js"></script>
+<script>
+  const model = window.ARCH_MODEL
+  const CELL_W = 244
+  const CELL_H = 92
+  const NODE_W = 168
+  const NODE_H = 64
+  const KINDS = {
+    client: 'Client',
+    network: 'Network',
+    k8s: 'Kubernetes',
+    api: 'API endpoint',
+    data: 'Data',
+    ci: 'CI/CD',
+    ops: 'Operations',
+  }
+  const STATUS_LABEL = { done: 'Done', 'in-progress': 'In progress', planned: 'Planned' }
+
+  const state = {
+    view: 'request',
+    selected: null,
+    showExtras: true,
+    issues: window.ISSUE_SNAPSHOT?.issues ?? {},
+    source: { live: false, at: window.ISSUE_SNAPSHOT?.takenAt },
+  }
+
+  // Decides a node's status from the issues it lists.
+  //   node.issues: issue numbers, e.g. [7, 13]
+  //   issues:      { "7": { state: "closed", assignees: ["mirafl0res"], ... }, ... }
+  // Returns 'done', 'in-progress' or 'planned'. statusOverride is handled before this is called.
+  // An assigned open issue counts as started, so work that is deployed but not yet closed (like #8) shows as in progress.
+  function deriveStatus(node, issues) {
+    const known = (node.issues ?? []).map((n) => issues[n]).filter(Boolean)
+    if (!known.length) return 'planned'
+    if (known.every((i) => i.state === 'closed')) return 'done'
+    if (known.some((i) => i.state === 'closed' || i.assignees?.length)) return 'in-progress'
+    return 'planned'
+  }
+
+  function statusOf(node) {
+    if (node.statusOverride) return node.statusOverride.status
+    return deriveStatus(node, state.issues)
+  }
+
+  function visibleNodes() {
+    return model.nodes.filter((n) => n.view === state.view && (state.showExtras || n.milestone !== 'Extras'))
+  }
+
+  function el(tag, attrs = {}, children = []) {
+    const node = document.createElement(tag)
+    for (const [key, value] of Object.entries(attrs)) {
+      if (key === 'text') node.textContent = value
+      else if (key.startsWith('on')) node.addEventListener(key.slice(2), value)
+      else node.setAttribute(key, value)
+    }
+    for (const child of [].concat(children)) if (child) node.append(child)
+    return node
+  }
+
+  function svgEl(tag, attrs) {
+    const node = document.createElementNS('http://www.w3.org/2000/svg', tag)
+    for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, value)
+    return node
+  }
+
+  function renderHeader() {
+    const at = state.source.at ? new Date(state.source.at).toLocaleString('sv-SE', { dateStyle: 'short', timeStyle: 'short' }) : 'unknown'
+    document.getElementById('source').textContent = state.source.live
+      ? `Status live from GitHub Issues, ${at}.`
+      : `Status from the saved snapshot, ${at} (GitHub was not reachable).`
+
+    const progress = document.getElementById('progress')
+    progress.replaceChildren()
+    for (const milestone of ['G', 'VG', 'Defence & submission', 'Extras']) {
+      const all = Object.values(state.issues).filter((i) => i.milestone === milestone)
+      if (!all.length) continue
+      const closed = all.filter((i) => i.state === 'closed').length
+      const bar = el('span')
+      bar.style.width = `${(closed / all.length) * 100}%`
+      progress.append(
+        el('div', { class: 'meter' }, [
+          el('b', { text: milestone }),
+          el('div', { class: 'bar' }, bar),
+          el('small', { text: `${closed} of ${all.length} issues closed` }),
+        ]),
+      )
+    }
+
+    const mapped = new Set([...model.unmappedOnPurpose, ...model.nodes.flatMap((n) => n.issues ?? [])])
+    const missing = Object.keys(state.issues).map(Number).filter((n) => !mapped.has(n)).sort((a, b) => a - b)
+    const unmapped = document.getElementById('unmapped')
+    unmapped.hidden = !missing.length
+    unmapped.replaceChildren(
+      'Not on the map yet (add to model.js): ',
+      ...missing.flatMap((n, i) => [i ? ', ' : '', issueLink(n, `#${n} ${state.issues[n].title}`)]),
+    )
+  }
+
+  function renderTabs() {
+    const tabs = document.getElementById('tabs')
+    tabs.replaceChildren(
+      ...model.views.map((view) =>
+        el('button', {
+          class: 'tab',
+          role: 'tab',
+          'aria-selected': String(view.id === state.view),
+          text: view.label,
+          onclick: () => {
+            state.view = view.id
+            state.selected = null
+            render()
+          },
+        }),
+      ),
+      el('label', {}, [
+        el('input', {
+          type: 'checkbox',
+          ...(state.showExtras ? { checked: '' } : {}),
+          onchange: (event) => {
+            state.showExtras = event.target.checked
+            render()
+          },
+        }),
+        'Show extras',
+      ]),
+    )
+    document.getElementById('intro').textContent = model.views.find((v) => v.id === state.view).intro
+  }
+
+  function renderCanvas() {
+    const nodes = visibleNodes()
+    const minRow = Math.min(...nodes.map((n) => n.row))
+    const pos = new Map(nodes.map((n) => [n.id, { x: n.col * CELL_W, y: (n.row - minRow) * CELL_H }]))
+    const width = Math.max(...nodes.map((n) => n.col)) * CELL_W + NODE_W
+    const height = Math.max(...nodes.map((n) => n.row - minRow)) * CELL_H + NODE_H
+
+    const canvas = document.getElementById('canvas')
+    canvas.style.width = `${width}px`
+    canvas.style.height = `${height}px`
+
+    const svg = svgEl('svg', { width, height, 'aria-hidden': 'true' })
+    const statuses = new Map(nodes.map((n) => [n.id, statusOf(n)]))
+    for (const edge of model.edges) {
+      const a = pos.get(edge.from)
+      const b = pos.get(edge.to)
+      if (!a || !b) continue
+      let d
+      let mid
+      if (b.x > a.x) {
+        const [x1, y1, x2, y2] = [a.x + NODE_W, a.y + NODE_H / 2, b.x, b.y + NODE_H / 2]
+        const cx = (x1 + x2) / 2
+        d = `M${x1},${y1} C${cx},${y1} ${cx},${y2} ${x2},${y2}`
+        mid = [cx, (y1 + y2) / 2]
+      } else {
+        const down = b.y > a.y
+        const [x1, y1, x2, y2] = [a.x + NODE_W / 2, down ? a.y + NODE_H : a.y, b.x + NODE_W / 2, down ? b.y : b.y + NODE_H]
+        d = `M${x1},${y1} L${x2},${y2}`
+        mid = [(x1 + x2) / 2 + 6, (y1 + y2) / 2]
+      }
+      const future = edge.future || statuses.get(edge.from) !== 'done' || statuses.get(edge.to) !== 'done'
+      svg.append(svgEl('path', { d, class: future ? 'future' : '' }))
+      if (edge.label) {
+        const text = svgEl('text', { x: mid[0], y: mid[1] - 4, 'text-anchor': b.x > a.x ? 'middle' : 'start' })
+        text.textContent = edge.label
+        svg.append(text)
+      }
+    }
+
+    const buttons = nodes.map((n) => {
+      const status = statuses.get(n.id)
+      const button = el(
+        'button',
+        {
+          class: `node ${status}`,
+          'aria-pressed': String(state.selected === n.id),
+          'aria-label': `${n.label}: ${STATUS_LABEL[status]}, ${n.milestone}`,
+          onclick: () => select(n.id),
+        },
+        [
+          el('span', { class: 'label', text: n.label }),
+          el('span', { class: 'sub', text: n.sub ?? '' }),
+          el('span', { class: 'badge', text: n.milestone }),
+          status === 'in-progress' ? el('span', { class: 'dot' }) : null,
+        ],
+      )
+      button.style.left = `${pos.get(n.id).x}px`
+      button.style.top = `${pos.get(n.id).y}px`
+      button.style.setProperty('--kind', `var(--kind-${n.kind})`)
+      return button
+    })
+
+    canvas.replaceChildren(svg, ...buttons)
+  }
+
+  function renderLegend() {
+    document.getElementById('legend').replaceChildren(
+      ...Object.entries(STATUS_LABEL).map(([key, label]) => el('span', {}, [el('i', { class: `swatch ${key}` }), label])),
+      ...Object.entries(KINDS).map(([key, label]) => {
+        const chip = el('i', { class: 'kind-chip' })
+        chip.style.background = `var(--kind-${key})`
+        return el('span', {}, [chip, label])
+      }),
+      el('span', { text: 'Badge: G / VG / Extras milestone' }),
+    )
+  }
+
+  function issueLink(number, text) {
+    return el('a', { href: `https://github.com/${model.repo}/issues/${number}`, target: '_blank', rel: 'noopener', text })
+  }
+
+  function fileLink(path) {
+    return el('a', { href: `https://github.com/${model.repo}/blob/main/${path}`, target: '_blank', rel: 'noopener', text: path })
+  }
+
+  function adrLink(slug) {
+    return el('a', { href: `../adr/${slug}.md`, text: `ADR ${slug.slice(0, 4)}: ${slug.slice(5).replaceAll('-', ' ')}` })
+  }
+
+  function section(title, items) {
+    if (!items?.length) return []
+    return [el('h3', { text: title }), el('ul', {}, items.map((item) => el('li', {}, item)))]
+  }
+
+  function renderPanel() {
+    const panel = document.getElementById('panel')
+    const node = model.nodes.find((n) => n.id === state.selected)
+    panel.classList.toggle('open', Boolean(node))
+    if (!node) {
+      panel.replaceChildren()
+      return
+    }
+    const status = statusOf(node)
+    const issues = (node.issues ?? []).map((n) => {
+      const issue = state.issues[n]
+      if (!issue) return issueLink(n, `#${n}`)
+      const who = issue.assignees?.length ? `, ${issue.assignees.join(', ')}` : ''
+      return el('span', {}, [issueLink(n, `#${n} ${issue.title}`), el('span', { class: 'issue-state', text: ` (${issue.state}${who})` })])
+    })
+    const children = [
+      el('button', { class: 'close', 'aria-label': 'Close', text: '×', onclick: () => select(null) }),
+      el('h2', { text: node.label }),
+      el('div', {}, [
+        el('span', { class: `pill ${status}`, text: STATUS_LABEL[status] }),
+        el('span', { class: 'pill planned', text: node.milestone }),
+        el('span', { class: 'pill planned', text: KINDS[node.kind] }),
+      ]),
+      node.statusOverride ? el('p', { class: 'issue-state', text: node.statusOverride.reason }) : null,
+      el('p', { text: node.summary }),
+      ...section('How it works', node.details),
+      ...section('Issues', issues),
+      ...section('Files', node.files?.map(fileLink)),
+      ...section('Decisions', node.adrs?.map(adrLink)),
+    ]
+    panel.replaceChildren(...children.filter(Boolean))
+  }
+
+  function select(id) {
+    state.selected = id
+    location.hash = id ? `${state.view}/${id}` : state.view
+    renderCanvas()
+    renderPanel()
+  }
+
+  function render() {
+    renderHeader()
+    renderTabs()
+    renderCanvas()
+    renderLegend()
+    renderPanel()
+  }
+
+  async function loadLiveIssues() {
+    try {
+      const response = await fetch(`https://api.github.com/repos/${model.repo}/issues?state=all&per_page=100`, {
+        headers: { Accept: 'application/vnd.github+json' },
+      })
+      if (!response.ok) throw new Error(`GitHub answered ${response.status}`)
+      const live = {}
+      for (const item of await response.json()) {
+        if (item.pull_request) continue
+        live[item.number] = {
+          title: item.title,
+          state: item.state,
+          assignees: item.assignees.map((a) => a.login),
+          milestone: item.milestone?.title,
+        }
+      }
+      // The newest 100 come live; older issues keep their snapshot state.
+      state.issues = { ...state.issues, ...live }
+      state.source = { live: true, at: new Date().toISOString() }
+      render()
+    } catch (error) {
+      console.warn('Using the issue snapshot:', error)
+    }
+  }
+
+  const [hashView, hashNode] = location.hash.slice(1).split('/')
+  if (model.views.some((v) => v.id === hashView)) state.view = hashView
+  if (model.nodes.some((n) => n.id === hashNode && n.view === state.view)) state.selected = hashNode
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') select(null)
+  })
+
+  render()
+  loadLiveIssues()
+</script>
+</body>
+</html>
