@@ -139,7 +139,7 @@ sed 's/IMAGE_TAG/<tag>/' k8s/backend.yaml | ssh root@<server-ip> 'kubectl apply 
 
 ### Postgres
 
-[`k8s/database/postgres.yaml`](../../k8s/database/postgres.yaml) holds Postgres as a StatefulSet with one replica and the headless Service `postgres`, so the database is `postgres:5432` from inside the namespace (#8). CI applies it before `k8s/*.yaml` and waits for `rollout status statefulset/postgres` ([ADR 0007](../adr/0007-migrations-with-dbmate-as-a-job.md)).
+[`k8s/database/postgres.yaml`](../../k8s/database/postgres.yaml) holds Postgres as a StatefulSet with one replica and the headless Service `postgres`, so the database is `postgres:5432` from inside the namespace (#8). [`k8s/deploy.sh`](../../k8s/deploy.sh) applies it first on every deploy and waits for `rollout status statefulset/postgres` ([ADR 0007](../adr/0007-migrations-with-dbmate-as-a-job.md)).
 
 - The image is pinned to `postgres:16.15-alpine`, the same major version as `backend/compose.yaml`.
 - The data lives on a 5Gi `local-path` volume (the PVC `data-postgres-0`), a folder under `/var/lib/rancher/k3s/storage/` on the server. It survives pod restarts and redeploys, but not `k3s-uninstall.sh` or a lost server: that is what backups (#17) are for. The size cannot be changed in the manifest once the StatefulSet exists, and local-path cannot grow a volume.
@@ -147,7 +147,7 @@ sed 's/IMAGE_TAG/<tag>/' k8s/backend.yaml | ssh root@<server-ip> 'kubectl apply 
 - The readiness probe runs `pg_isready` over TCP, so the pod is only `Ready` once initialisation is finished and the real server listens.
 - There is no liveness probe: restarting a database that is slow under load would make things worse.
 
-**The Secret `postgres`** is created by hand, once, before the first deploy that applies the StatefulSet. It holds the superuser password and the URL the backend and the migration Job use. Generate the password on the server, so it never leaves it:
+**The Secret `postgres`** is created by hand, once, before the first deploy that applies the StatefulSet (done on 2026-10-26, together with the Role update for StatefulSets and Jobs). It holds the superuser password and the URL the backend and the migration Job use. Generate the password on the server, so it never leaves it:
 
 ```
 PW=$(openssl rand -hex 24)
@@ -167,6 +167,30 @@ Check it:
 kubectl -n tickets get statefulset/postgres pvc/data-postgres-0 pod/postgres-0
 kubectl -n tickets exec postgres-0 -- psql -U postgres -d tickets -c 'SELECT 1'
 ```
+
+### Migrations and the deploy script
+
+Every deploy runs [`k8s/deploy.sh`](../../k8s/deploy.sh) on the server. CI sends the `k8s/` folder as a tar stream over its one SSH connection and runs the script with the commit SHA and the run ID, so waiting for the migration Job opens no new connections. In order, the script:
+
+1. Applies `k8s/database/` and waits for Postgres.
+2. Creates the Job `migrate-<run id>-<attempt>` from [`k8s/jobs/migrate.yaml`](../../k8s/jobs/migrate.yaml), which runs `bun run migrate && bun run import` in the backend image of the same commit.
+3. Waits for the Job to be `Complete` or `Failed`, and prints its logs either way. On `Failed` it stops with exit code 1, so the backend is not rolled out and keeps running on the old schema.
+4. Applies `k8s/*.yaml` and waits for the backend and frontend rollouts.
+
+**A failed deploy.** The Job's logs are at the end of the deploy step's log in Actions. A failed migration is rolled back completely, and dbmate does not record it in `schema_migrations`, so the fix is a new commit that changes or removes the migration file. An already applied migration is never edited: fix it with a new one. While Kubernetes keeps the Job (an hour, `ttlSecondsAfterFinished`), its logs are also on the server:
+
+```
+kubectl -n tickets get jobs
+kubectl -n tickets logs job/migrate-<run id>-<attempt>
+```
+
+**Running a deploy by hand**, as root on the server, for example after a restore or when CI is down: copy `k8s/` from the commit to deploy, then run the script with that commit's full SHA (its images must be on GHCR) and a run ID that cannot clash with CI's:
+
+```
+tar -c k8s | ssh root@<server-ip> 'd=$(mktemp -d) && tar -x -C "$d" && bash "$d/k8s/deploy.sh" <full sha> manual-$(date +%s); rm -rf "$d"'
+```
+
+**Re-running a CI deploy** ("Re-run jobs" in Actions) gets a new attempt number and so a new Job. That is safe: dbmate skips applied migrations, and the import skips tickets that already exist.
 
 ### Deploying without CI
 

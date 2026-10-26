@@ -31,7 +31,7 @@ The deploy job does, in order:
 2. Pipe them over SSH into `kubectl apply -n tickets -f -`.
 3. Run `kubectl -n tickets rollout status` for each Deployment with `--timeout=120s`, so the job fails when the new pods never become ready.
 
-[ADR 0007](0007-migrations-with-dbmate-as-a-job.md) adds two steps before these: CI applies `k8s/database/` and runs the migration Job from `k8s/jobs/`, and the backend is rolled out only once that Job has completed.
+[ADR 0007](0007-migrations-with-dbmate-as-a-job.md) adds two steps before these: CI applies `k8s/database/` and runs the migration Job from `k8s/jobs/`, and the backend is rolled out only once that Job has completed. Since #8 all the steps run in `k8s/deploy.sh` on the server, which also replaces `IMAGE_TAG`: CI sends `k8s/` over the same single SSH connection.
 
 ## Consequences
 
