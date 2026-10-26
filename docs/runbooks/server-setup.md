@@ -135,7 +135,7 @@ sed 's/IMAGE_TAG/<tag>/' k8s/backend.yaml | ssh root@<server-ip> 'kubectl apply 
 
 - The Ingress serves `cdn.<domain>` with a `letsencrypt-prod` certificate in the secret `frontend-tls`, issued straight from prod, since the prod issuer was already proven on `api.<domain>`.
 - Readiness and liveness probes call `/` on port 8080.
-- The GHCR package `ticket-booking-platform-frontend` must be public, like the backend's, or k3s cannot pull it. The first push from CI creates it as private, so the first deploy fails with `ImagePullBackOff`: Jennifer (the owner) makes the package public in its settings, then re-runs the failed jobs of that workflow run.
+- The GHCR package `ticket-booking-platform-frontend` is public, like the backend's, so k3s pulls it without an `imagePullSecret`. If a new package ever comes up private, the deploy fails with `ImagePullBackOff`: the owner (Jennifer) makes it public in its settings and re-runs the failed jobs.
 
 ### Deploying without CI
 
