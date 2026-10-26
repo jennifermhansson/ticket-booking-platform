@@ -6,7 +6,8 @@ Last updated: 2026-10-26
 
 **Next step:**
 
-- **Philip:** the cdn page (#7), deployed by the pipeline. Everything on the server is in [docs/runbooks/server-setup.md](docs/runbooks/server-setup.md).
+- **Philip:** the cdn page (#7) is in review. CI builds a second image (`ticket-booking-platform-frontend`) and deploys it to `https://cdn.<domain>` ([ADR 0008](docs/adr/0008-static-files-from-nginx-pod.md)). Everything on the server is in [docs/runbooks/server-setup.md](docs/runbooks/server-setup.md).
+- **Jennifer, right after #7 merges:** the first deploy fails with `ImagePullBackOff`, because GHCR creates the frontend package as private. Make it public in its package settings, then re-run the failed jobs of that workflow run.
 - **Decided on 2026-10-26:** migrations use dbmate and run as a Kubernetes Job before each rollout ([ADR 0007](docs/adr/0007-migrations-with-dbmate-as-a-job.md)). #8 and #9 build on it, so it is merged before either.
 - **Jennifer:** the `tickets` schema as the first dbmate migration and the CSV import as a Bun script, against a local Postgres (#9), then #10–#12.
 - **Unowned and unblocked:** #8 (Postgres in k3s and the migration Job), which #10–#12 need in the cluster, and #43 (validate manifests in CI). Pick owners.

@@ -15,13 +15,13 @@ These are the names #4 (cluster and manifests) and #6 (the workflow) both build 
 
 | What | Value |
 |---|---|
-| Backend image | `ghcr.io/jennifermhansson/ticket-booking-platform-backend` |
+| Images | `ghcr.io/jennifermhansson/ticket-booking-platform-backend` and `…-frontend` (#7) |
 | Image tag | the full commit SHA (`${{ github.sha }}`), never `latest` |
 | Namespace | `tickets` |
-| Deployment and container | `backend` and `backend` |
+| Deployments and containers | `backend` and `frontend`, each with one container of the same name |
 | Manifests CI applies | `k8s/*.yaml`: namespaced resources only, each file starting with `---` so they can be concatenated |
 | Manifests applied by hand | `k8s/cluster/`: the namespace, the cert-manager install and its `ClusterIssuer`s, the Traefik override and the deploy user's RBAC |
-| Image line in the Deployment | `ghcr.io/jennifermhansson/ticket-booking-platform-backend:IMAGE_TAG`; the workflow replaces `IMAGE_TAG` with the SHA |
+| Image line in each Deployment | `ghcr.io/jennifermhansson/ticket-booking-platform-<app>:IMAGE_TAG`; the workflow replaces `IMAGE_TAG` with the SHA |
 | SSH user | `deploy` |
 | Actions secrets | `DEPLOY_HOST` (the server IP), `DEPLOY_SSH_KEY` (the deploy user's private key), `DEPLOY_KNOWN_HOSTS` (the server's `known_hosts` line) |
 
@@ -29,7 +29,7 @@ The deploy job does, in order:
 
 1. Replace `IMAGE_TAG` in the manifests with the commit SHA.
 2. Pipe them over SSH into `kubectl apply -n tickets -f -`.
-3. Run `kubectl -n tickets rollout status deployment/backend --timeout=120s`, so the job fails when the new pods never become ready.
+3. Run `kubectl -n tickets rollout status` for each Deployment with `--timeout=120s`, so the job fails when the new pods never become ready.
 
 [ADR 0007](0007-migrations-with-dbmate-as-a-job.md) adds two steps before these: CI applies `k8s/database/` and runs the migration Job from `k8s/jobs/`, and the backend is rolled out only once that Job has completed.
 

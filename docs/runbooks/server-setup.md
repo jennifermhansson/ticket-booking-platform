@@ -129,9 +129,17 @@ sed 's/IMAGE_TAG/<tag>/' k8s/backend.yaml | ssh root@<server-ip> 'kubectl apply 
 - Readiness and liveness probes call `/health` on port 3000, so a pod gets traffic only once the app answers and is restarted if it stops answering.
 - Plain HTTP is not redirected to HTTPS yet. Browsers use HTTPS anyway, since `.dev` is on the HSTS preload list, but `curl` and k6 do not.
 
+### The cdn page
+
+[`k8s/frontend.yaml`](../../k8s/frontend.yaml) holds the frontend's Deployment, Service and Ingress, built and deployed the same way as the backend (#7). [ADR 0008](../adr/0008-static-files-from-nginx-pod.md) explains why the files get a pod of their own. The image is nginx (`nginxinc/nginx-unprivileged`, non-root, port 8080) with `frontend/public/` copied in at build time, so a changed page ships as a new image and the deploy Role needs no ConfigMaps.
+
+- The Ingress serves `cdn.<domain>` with a `letsencrypt-prod` certificate in the secret `frontend-tls`, issued straight from prod, since the prod issuer was already proven on `api.<domain>`.
+- Readiness and liveness probes call `/` on port 8080.
+- The GHCR package `ticket-booking-platform-frontend` must be public, like the backend's, or k3s cannot pull it. The first push from CI creates it as private, so the first deploy fails with `ImagePullBackOff`: Jennifer (the owner) makes the package public in its settings, then re-runs the failed jobs of that workflow run.
+
 ### Deploying without CI
 
-Since 2026-10-23 (#54), every merge to `main` deploys: CI pushes the image to GHCR, where the package is public, and the `deploy` job applies `k8s/backend.yaml` with the commit SHA as the tag. Before that, and whenever CI can't deploy, the Deployment can run a copy of the backend built from `main` on a laptop and loaded straight into k3s:
+Since 2026-10-23 (#54), every merge to `main` deploys: CI pushes the images to GHCR, where the packages are public, and the `deploy` job applies `k8s/*.yaml` with the commit SHA as the tag. Before that, and whenever CI can't deploy, the Deployment can run a copy of the backend built from `main` on a laptop and loaded straight into k3s:
 
 ```
 docker buildx build --platform linux/amd64 -t ghcr.io/jennifermhansson/ticket-booking-platform-backend:placeholder-<short sha> --load backend
