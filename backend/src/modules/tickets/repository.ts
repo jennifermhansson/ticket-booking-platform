@@ -14,7 +14,9 @@ const effectiveStatus = sql`
 export async function listTickets(
   query: ListTicketsQuery,
 ): Promise<{ rows: TicketRow[]; total: number }> {
-  const statusFilter = query.status ? sql`WHERE ${effectiveStatus} = ${query.status}` : sql``
+  const statusFilter = query.status
+    ? sql`WHERE ${effectiveStatus} = ${query.status}`
+    : sql``
 
   // count(*) OVER () gives the total from the same snapshot as the page.
   const rows: (TicketRow & { total: string })[] = await sql`
