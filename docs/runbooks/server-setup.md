@@ -177,7 +177,7 @@ Every deploy runs [`k8s/deploy.sh`](../../k8s/deploy.sh) on the server. CI sends
 3. Waits for the Job to be `Complete` or `Failed`, and prints its logs either way. On `Failed` it stops with exit code 1, so the backend is not rolled out and keeps running on the old schema.
 4. Applies `k8s/*.yaml` and waits for the backend and frontend rollouts.
 
-**A failed deploy.** The Job's logs are at the end of the deploy step's log in Actions. A failed migration is rolled back completely, and dbmate does not record it in `schema_migrations`, so the fix is a new commit that changes or removes the migration file. An already applied migration is never edited: fix it with a new one. While Kubernetes keeps the Job (an hour, `ttlSecondsAfterFinished`), its logs are also on the server:
+**A failed deploy.** The Job's logs are at the end of the deploy step's log in Actions. A failed migration is rolled back completely, and dbmate does not record it in `schema_migrations`, so the fix is a new commit that changes or removes the migration file. Tested once on 2026-10-27 (#8): PR #65 merged a migration with `SELECT 1/0`, the step ended with `Error: pq: division by zero` and `job/migrate-40479585069-1 failed: the backend was not rolled out`, and the backend kept its old image; the next PR removed the file. An already applied migration is never edited: fix it with a new one. While Kubernetes keeps the Job (an hour, `ttlSecondsAfterFinished`), its logs are also on the server:
 
 ```
 kubectl -n tickets get jobs
