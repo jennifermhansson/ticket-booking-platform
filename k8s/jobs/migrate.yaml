@@ -1,0 +1,43 @@
+---
+# Runs before every backend rollout (ADR 0007). k8s/deploy.sh replaces RUN_ID
+# with the workflow run and attempt, since a Job's pod template cannot change
+# after it is created, and IMAGE_TAG with the commit SHA.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrate-RUN_ID
+  labels:
+    app: migrate
+spec:
+  # A failed migration is rolled back and would fail the same way again.
+  backoffLimit: 0
+  # Longer than dbmate's 120s wait for the database plus the import, so a
+  # hanging migration ends as Failed before deploy.sh stops waiting.
+  activeDeadlineSeconds: 300
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        app: migrate
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: ghcr.io/jennifermhansson/ticket-booking-platform-backend:IMAGE_TAG
+          command: ["sh", "-c", "bun run migrate && bun run import"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: postgres
+                  key: DATABASE_URL
+            - name: DBMATE_WAIT_TIMEOUT
+              value: 120s
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false

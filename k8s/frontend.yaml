@@ -1,5 +1,5 @@
 ---
-# Applied by CI with `kubectl apply -n tickets`, so no object names a namespace.
+# Applied by k8s/deploy.sh with `kubectl apply -n tickets`, so no object names a namespace.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          # CI replaces IMAGE_TAG with the commit SHA (ADR 0006).
+          # k8s/deploy.sh replaces IMAGE_TAG with the commit SHA (ADR 0006).
           image: ghcr.io/jennifermhansson/ticket-booking-platform-frontend:IMAGE_TAG
           ports:
             - name: http
