@@ -20,6 +20,8 @@ Last updated: 2026-10-27
 **Blockers:** none.
 
 Tasks, owners and progress live in GitHub Issues: `gh issue list --milestone G` (milestones `G`, `VG`, `Defence & submission`, `Extras`). This file holds only what issues can't: the current phase, the next step and blockers.
+
+**Architecture map (#64):** [docs/architecture/index.html](docs/architecture/index.html) shows every planned part of the system and, from the issues, what is in place.
 ## Key dates
 
 - 2026-11-04: oral defence; the system is demoed as it is that day

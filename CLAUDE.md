@@ -11,6 +11,7 @@ Exam project for Chas Academy course 6 (Advanced fullstack, test & DevOps), buil
 - [GLOSSARY.md](GLOSSARY.md): domain terms. Use these words in code, docs and conversation.
 - [docs/adr/](docs/adr/): decisions with real trade-offs. Read the relevant ADR before changing something it covers.
 - `docs/runbooks/`: operational procedures (restore, incident handling), added as they are written.
+- [docs/architecture/](docs/architecture/README.md): the clickable architecture map. Its structure is `model.js`, so a PR that adds or changes a component updates `model.js` too.
 
 Two people share this repo, each with their own Claude. Claude's memory is personal to one machine, so every project decision, status change or trade-off goes into these repo files or the issues, where both Claudes read it.
 

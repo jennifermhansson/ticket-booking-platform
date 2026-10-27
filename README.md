@@ -1,5 +1,7 @@
 # ticket-booking-platform
 
+How the system fits together, and what is built so far: open the [architecture map](docs/architecture/README.md).
+
 ## Run the backend locally
 
 You need Bun and Docker. From the repo root:
