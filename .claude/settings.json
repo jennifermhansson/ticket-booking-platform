@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'Your open issues:'; gh issue list --assignee @me --limit 20 || echo '(gh failed: check gh auth status)'; echo; echo 'Unassigned open issues:'; gh issue list --search no:assignee --limit 20 || true",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -7,7 +7,8 @@ Exam project for Chas Academy course 6 (Advanced fullstack, test & DevOps), buil
 ## Where things live
 
 - [docs/plan.md](docs/plan.md): phases, timeline and the reasoning behind them. Work follows its priority order: G criteria → VG criteria → extras.
-- GitHub Issues: every task, with owner, milestone (`G`, `VG`, `Defence & submission`, `Extras`) and a *Done when* line. Read them with `gh issue list --milestone <name>` and `gh issue view <n>`. When asked what to work on next, pick the lowest open issue in the earliest unfinished milestone.
+- GitHub Issues: every task, with owner, milestone (`G`, `VG`, `Defence & submission`, `Extras`) and a *Done when* line. Read them with `gh issue list --milestone <name>` and `gh issue view <n>`. When asked what to work on next, pick the lowest open issue in the earliest unfinished milestone. They are the only record of who does what and what blocks what.
+- `.claude/settings.json`: a SessionStart hook that prints your open issues and the unassigned ones when a session starts. It fires only when `claude` starts at the repo root, since Claude Code reads `.claude/settings.json` only from the directory it was started in.
 - [GLOSSARY.md](GLOSSARY.md): domain terms. Use these words in code, docs and conversation.
 - [docs/adr/](docs/adr/): decisions with real trade-offs. Read the relevant ADR before changing something it covers.
 - `docs/runbooks/`: operational procedures (restore, incident handling), added as they are written.
@@ -36,7 +37,7 @@ Two people share this repo, each with their own Claude. Claude's memory is perso
 - Work that has no issue yet gets one first (`gh issue create` with a milestone, labels and a *Done when* line).
 - Conventional commits: `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`.
 - Show git commands in modern syntax: `git switch`, `git switch -c`, `git restore`, `git restore --staged`.
-- Update `STATUS.md` (and add an ADR if one is due) in the same PR as the work; `/update-status` does this at the end of a session.
+- Keep the issues current as you work: the assignee, *blocked by*, and a comment when a task moves. Update `STATUS.md` only when the phase changes, in a small PR of its own. Add an ADR, if one is due, in the same PR as the work. `/update-status` does all of this at the end of a session.
 
 ## Working with Claude
 
