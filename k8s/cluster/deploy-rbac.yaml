@@ -1,7 +1,8 @@
 ---
 # The identity CI deploys as (ADR 0006). It can change only the tickets
-# namespace, and only the kinds k8s/*.yaml holds: add a rule here when a
-# manifest gets a new kind, or CI's apply is refused.
+# namespace, and only the kinds the manifests CI applies hold (everything in
+# k8s/ except k8s/cluster/): add a rule here when a manifest gets a new kind,
+# or CI's apply is refused.
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -26,8 +27,13 @@ metadata:
   namespace: tickets
 rules:
   - apiGroups: ["apps"]
-    resources: ["deployments"]
+    resources: ["deployments", "statefulsets"]
     verbs: ["get", "list", "watch", "create", "update", "patch"]
+  # The migration Job gets a new name on every deploy (ADR 0007), so it is
+  # only ever created, and ttlSecondsAfterFinished removes it.
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["get", "list", "watch", "create"]
   - apiGroups: [""]
     resources: ["services"]
     verbs: ["get", "list", "watch", "create", "update", "patch"]

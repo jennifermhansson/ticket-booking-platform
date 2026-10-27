@@ -2,15 +2,20 @@
 
 Last updated: 2026-10-26
 
-**Phase:** 1 (G criteria), step 2: app core + frontend (2026-10-24 → 10-26). Step 1 is done: the checkpoint was proven on 2026-10-23, when the merge of #54 ended with a green `deploy` job and the cluster's backend image tagged with that merge's SHA (`e85600b`). Every merge to `main` now deploys to `https://api.<domain>`.
+**Phase:** 1 (G criteria), step 3: tests in the pipeline (2026-10-27 → 10-28). Step 2's window (10-24 → 10-26) ended with the database in place but the app core (#10–#12) and the React frontend (#13) still open, so they run alongside step 3. Every merge to `main` deploys Postgres, runs the migration Job and only then rolls out the backend to `https://api.<domain>` and the frontend to `https://cdn.<domain>`.
 
 **Next step:**
 
-- **Philip:** the cdn page (#7) is in review. CI builds a second image (`ticket-booking-platform-frontend`) and deploys it to `https://cdn.<domain>` ([ADR 0008](docs/adr/0008-static-files-from-nginx-pod.md)). Everything on the server is in [docs/runbooks/server-setup.md](docs/runbooks/server-setup.md).
-- **Jennifer, right after #7 merges:** the first deploy fails with `ImagePullBackOff`, because GHCR creates the frontend package as private. Make it public in its package settings, then re-run the failed jobs of that workflow run.
-- **Decided on 2026-10-26:** migrations use dbmate and run as a Kubernetes Job before each rollout ([ADR 0007](docs/adr/0007-migrations-with-dbmate-as-a-job.md)). #8 and #9 build on it.
-- **Jennifer:** #9 is in its PR: the `tickets` table as the first dbmate migration and the CSV import as a Bun script, verified against a local Postgres. Next: #10, then #11 and #12. They run locally first, but need #8 for the cluster.
-- **Unowned and unblocked:** #8 (Postgres in k3s and the migration Job), which now also has to run `bun run import` as the second step and put `db/` with the CSV in the image (see its comment), and #43 (validate manifests in CI). Pick owners.
+- **Done on 2026-10-26:**
+  - The cdn page (#7). The merge of #59 deployed it, and `https://cdn.<domain>` answers over HTTPS ([ADR 0008](docs/adr/0008-static-files-from-nginx-pod.md)).
+  - The `tickets` table and the CSV import (#9, PR #60).
+  - Postgres in the cluster with the migration Job (#8, PR #62). CI runs [`k8s/deploy.sh`](k8s/deploy.sh) on the server, which stops the deploy before the rollout if the Job fails ([ADR 0007](docs/adr/0007-migrations-with-dbmate-as-a-job.md), [runbook](docs/runbooks/server-setup.md#migrations-and-the-deploy-script)). The deploy Role and the Secret `postgres` were set up by hand the same day.
+- **Philip, first:** check #62's deploy, then finish #8.
+  - In the Actions log, the Job prints `inserted 5000 of 5000` before the backend rollout.
+  - On the server, `kubectl -n tickets get pvc data-postgres-0` is `Bound`.
+  - The failure test, once: merge a PR with a migration that fails on purpose. Check that the deploy goes red and the backend keeps its old image. Then merge a PR that removes the migration. A failed migration is rolled back and never recorded, so removing it is safe.
+- **Jennifer:** #10, then #11 and #12. With #8 merged they can run in the cluster, where `DATABASE_URL` comes from the Secret `postgres`. The backend Deployment does not read it yet: #10 adds that `env` entry, the same way `k8s/jobs/migrate.yaml` does.
+- **Unowned and unblocked:** #13 (the minimal React frontend on cdn), #14 (unit tests in the pipeline) and #43 (validate manifests in CI). Pick owners.
 - **Branch protection (#21)** is not on yet, and only the repo owner (Jennifer) can turn it on.
 
 **Domain:** `<domain>` in the docs means `tickets.philipzachariasson.dev`, so the backend is `api.tickets.philipzachariasson.dev`. The root domain stays free for other use.

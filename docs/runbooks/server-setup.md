@@ -119,7 +119,7 @@ The ACME accounts have no email address: Let's Encrypt no longer sends expiry em
 
 ## The tickets namespace and the backend
 
-[`k8s/cluster/namespace.yaml`](../../k8s/cluster/namespace.yaml) creates the `tickets` namespace, applied by hand like the rest of `k8s/cluster/`. [`k8s/backend.yaml`](../../k8s/backend.yaml) holds the backend's Deployment, Service and Ingress. It names no namespace and keeps the literal `IMAGE_TAG` in its image line, because CI fills in both, as [ADR 0006](../adr/0006-deploy-from-ci-over-ssh.md) describes. To apply it by hand, do what CI does:
+[`k8s/cluster/namespace.yaml`](../../k8s/cluster/namespace.yaml) creates the `tickets` namespace, applied by hand like the rest of `k8s/cluster/`. [`k8s/backend.yaml`](../../k8s/backend.yaml) holds the backend's Deployment, Service and Ingress. It names no namespace and keeps the literal `IMAGE_TAG` in its image line, because the deploy fills in both ([ADR 0006](../adr/0006-deploy-from-ci-over-ssh.md)): `kubectl apply -n tickets`, and `k8s/deploy.sh` replaces the tag. To apply only this file by hand:
 
 ```
 sed 's/IMAGE_TAG/<tag>/' k8s/backend.yaml | ssh root@<server-ip> 'kubectl apply -n tickets -f -'
@@ -135,11 +135,66 @@ sed 's/IMAGE_TAG/<tag>/' k8s/backend.yaml | ssh root@<server-ip> 'kubectl apply 
 
 - The Ingress serves `cdn.<domain>` with a `letsencrypt-prod` certificate in the secret `frontend-tls`, issued straight from prod, since the prod issuer was already proven on `api.<domain>`.
 - Readiness and liveness probes call `/` on port 8080.
-- The GHCR package `ticket-booking-platform-frontend` must be public, like the backend's, or k3s cannot pull it. The first push from CI creates it as private, so the first deploy fails with `ImagePullBackOff`: Jennifer (the owner) makes the package public in its settings, then re-runs the failed jobs of that workflow run.
+- The GHCR package `ticket-booking-platform-frontend` is public, like the backend's, so k3s pulls it without an `imagePullSecret`. If a new package ever comes up private, the deploy fails with `ImagePullBackOff`: the owner (Jennifer) makes it public in its settings and re-runs the failed jobs.
+
+### Postgres
+
+[`k8s/database/postgres.yaml`](../../k8s/database/postgres.yaml) holds Postgres as a StatefulSet with one replica and the headless Service `postgres`, so the database is `postgres:5432` from inside the namespace (#8). [`k8s/deploy.sh`](../../k8s/deploy.sh) applies it first on every deploy and waits for `rollout status statefulset/postgres` ([ADR 0007](../adr/0007-migrations-with-dbmate-as-a-job.md)).
+
+- The image is pinned to `postgres:16.15-alpine`, the same major version as `backend/compose.yaml`.
+- The data lives on a 5Gi `local-path` volume (the PVC `data-postgres-0`), a folder under `/var/lib/rancher/k3s/storage/` on the server. It survives pod restarts and redeploys, but not `k3s-uninstall.sh` or a lost server: that is what backups (#17) are for. The size cannot be changed in the manifest once the StatefulSet exists, and local-path cannot grow a volume.
+- `PGDATA` is a subfolder of the volume, `pgdata`, as the Postgres image recommends for mounted volumes.
+- The readiness probe runs `pg_isready` over TCP, so the pod is only `Ready` once initialisation is finished and the real server listens.
+- There is no liveness probe: restarting a database that is slow under load would make things worse.
+
+**The Secret `postgres`** is created by hand, once, before the first deploy that applies the StatefulSet (done on 2026-10-26, together with the Role update for StatefulSets and Jobs). It holds the superuser password and the URL the backend and the migration Job use. Generate the password on the server, so it never leaves it:
+
+```
+PW=$(openssl rand -hex 24)
+kubectl -n tickets create secret generic postgres \
+  --from-literal=POSTGRES_PASSWORD="$PW" \
+  --from-literal=DATABASE_URL="postgres://postgres:$PW@postgres:5432/tickets?sslmode=disable"
+unset PW
+```
+
+- Hex needs no URL encoding, so the password goes straight into `DATABASE_URL`.
+- `?sslmode=disable`, because Postgres in the cluster has no TLS (ADR 0007).
+- `POSTGRES_PASSWORD` is only read when the volume is empty. Changing the Secret later does not change the password of the existing database: change it in Postgres with `ALTER USER postgres PASSWORD '…'` and update both keys of the Secret.
+
+Check it:
+
+```
+kubectl -n tickets get statefulset/postgres pvc/data-postgres-0 pod/postgres-0
+kubectl -n tickets exec postgres-0 -- psql -U postgres -d tickets -c 'SELECT 1'
+```
+
+### Migrations and the deploy script
+
+Every deploy runs [`k8s/deploy.sh`](../../k8s/deploy.sh) on the server. CI sends the `k8s/` folder as a tar stream over its one SSH connection and runs the script with the commit SHA and the run ID, so waiting for the migration Job opens no new connections. In order, the script:
+
+1. Applies `k8s/database/` and waits for Postgres.
+2. Creates the Job `migrate-<run id>-<attempt>` from [`k8s/jobs/migrate.yaml`](../../k8s/jobs/migrate.yaml), which runs `bun run migrate && bun run import` in the backend image of the same commit.
+3. Waits for the Job to be `Complete` or `Failed`, and prints its logs either way. On `Failed` it stops with exit code 1, so the backend is not rolled out and keeps running on the old schema.
+4. Applies `k8s/*.yaml` and waits for the backend and frontend rollouts.
+
+**A failed deploy.** The Job's logs are at the end of the deploy step's log in Actions. A failed migration is rolled back completely, and dbmate does not record it in `schema_migrations`, so the fix is a new commit that changes or removes the migration file. An already applied migration is never edited: fix it with a new one. While Kubernetes keeps the Job (an hour, `ttlSecondsAfterFinished`), its logs are also on the server:
+
+```
+kubectl -n tickets get jobs
+kubectl -n tickets logs job/migrate-<run id>-<attempt>
+```
+
+**Running a deploy by hand**, as root on the server, for example after a restore or when CI is down: copy `k8s/` from the commit to deploy, then run the script with that commit's full SHA (its images must be on GHCR) and a run ID that cannot clash with CI's:
+
+```
+tar -c k8s | ssh root@<server-ip> 'd=$(mktemp -d) && tar -x -C "$d" && bash "$d/k8s/deploy.sh" <full sha> manual-$(date +%s); rm -rf "$d"'
+```
+
+**Re-running a CI deploy** ("Re-run jobs" in Actions) gets a new attempt number and so a new Job. That is safe: dbmate skips applied migrations, and the import skips tickets that already exist.
 
 ### Deploying without CI
 
-Since 2026-10-23 (#54), every merge to `main` deploys: CI pushes the images to GHCR, where the packages are public, and the `deploy` job applies `k8s/*.yaml` with the commit SHA as the tag. Before that, and whenever CI can't deploy, the Deployment can run a copy of the backend built from `main` on a laptop and loaded straight into k3s:
+Since 2026-10-23 (#54), every merge to `main` deploys: CI pushes the images to GHCR, where the packages are public, and the `deploy` job runs `k8s/deploy.sh` on the server with the commit SHA as the tag (see [Migrations and the deploy script](#migrations-and-the-deploy-script)). Before that, and whenever CI can't deploy, the Deployment can run a copy of the backend built from `main` on a laptop and loaded straight into k3s:
 
 ```
 docker buildx build --platform linux/amd64 -t ghcr.io/jennifermhansson/ticket-booking-platform-backend:placeholder-<short sha> --load backend
@@ -154,7 +209,7 @@ CI deploys over SSH as the Linux user `deploy`, which runs `kubectl` with a Serv
 
 **Kubernetes side.** [`k8s/cluster/deploy-rbac.yaml`](../../k8s/cluster/deploy-rbac.yaml) holds the `deploy` ServiceAccount, a Role, its RoleBinding and the Secret `deploy-token`:
 
-- The Role allows get, list, watch, create, update and patch on Deployments, Services and Ingresses, and read-only access to ReplicaSets, Pods, pod logs and Events, which `kubectl rollout status` and debugging need. It allows no delete, no Secrets and nothing outside `tickets`. When a manifest in `k8s/` gets a new kind (a StatefulSet for Postgres, a HorizontalPodAutoscaler), add it to the Role first, or CI's apply is refused.
+- The Role allows get, list, watch, create, update and patch on Deployments, StatefulSets, Services and Ingresses, get, list, watch and create on Jobs (the migration Job gets a new name on every deploy, so it is never updated), and read-only access to ReplicaSets, Pods, pod logs and Events, which `kubectl rollout status` and debugging need. It allows no delete, no Secrets and nothing outside `tickets`. When a manifest in `k8s/` gets a new kind (a HorizontalPodAutoscaler, a CronJob), add it to the Role first, or CI's apply is refused.
 - `deploy-token` is a `kubernetes.io/service-account-token` Secret, so the token does not expire. Since Kubernetes 1.24 a ServiceAccount gets no lasting token by itself, and `kubectl create token` expires within hours.
 - Check what it may do: `kubectl auth can-i --list -n tickets --as=system:serviceaccount:tickets:deploy`.
 
