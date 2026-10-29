@@ -1,4 +1,4 @@
-import type { Ticket, TicketRow } from './types'
+import type { Reservation, ReservationRow, Ticket, TicketRow } from './types'
 
 export function toTicket(row: TicketRow): Ticket {
   return {
@@ -9,5 +9,13 @@ export function toTicket(row: TicketRow): Ticket {
       row.status === 'reserved' && row.reserved_until
         ? row.reserved_until.toISOString()
         : null,
+  }
+}
+
+export function toReservation(row: ReservationRow): Reservation {
+  return {
+    ticketNumber: row.ticket_number,
+    reservedUntil: row.reserved_until.toISOString(),
+    reservationToken: row.reservation_token,
   }
 }

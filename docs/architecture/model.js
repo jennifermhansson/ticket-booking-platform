@@ -241,17 +241,19 @@ window.ARCH_MODEL = {
       col: 5,
       row: 1,
       kind: 'api',
-      label: 'Reserve',
+      label: 'POST /reservations',
       sub: 'FOR UPDATE SKIP LOCKED',
       milestone: 'G',
       issues: [11],
       summary:
-        'Takes one available ticket in a transaction with SELECT … FOR UPDATE SKIP LOCKED and sets reserved_until.',
+        'Takes one available ticket with SELECT … FOR UPDATE SKIP LOCKED, sets reserved_until and returns a reservation token.',
       details: [
         'SKIP LOCKED: concurrent requests each lock a different row instead of queueing behind the same one.',
         'An expired reservation is treated as available on every read, so no background worker is needed.',
+        'RESERVATION_SECONDS sets how long a reservation holds a ticket (default 300). 201 with the reservation, 409 when no ticket is free.',
       ],
-      adrs: ['0002-row-per-ticket-with-skip-locked'],
+      files: ['backend/src/modules/tickets/route.ts', 'backend/src/modules/tickets/repository.ts', 'backend/test/reservationSeconds.test.ts'],
+      adrs: ['0002-row-per-ticket-with-skip-locked', '0009-reservation-token-instead-of-login'],
     },
     {
       id: 'ep-purchase',
@@ -346,13 +348,15 @@ window.ARCH_MODEL = {
       milestone: 'G',
       issues: [9],
       summary:
-        'One row per ticket number AMX-00001 … AMX-05000, with status available, reserved or sold and reserved_until.',
+        'One row per ticket number AMX-00001 … AMX-05000, with status available, reserved or sold, reserved_until and reservation_token.',
       details: [
         'A CHECK requires reserved_until whenever status is reserved.',
+        'reservation_token is a new UUID on each reservation; a purchase must send it (ADR 0009).',
         'The import runs in the migration Job on every deploy and changes nothing the second time.',
       ],
       files: [
         'backend/db/migrations/20261026130145_create_tickets.sql',
+        'backend/db/migrations/20261029085935_add_reservation_token.sql',
         'backend/db/importTickets.ts',
         'backend/db/parseTicketNumbers.ts',
       ],

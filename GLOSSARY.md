@@ -6,6 +6,8 @@
 
 **Reservation**: a time-limited hold on one ticket for one customer. While it is active, no one else can reserve or buy that ticket. When it expires without a purchase, the ticket is available again.
 
+**Reservation token**: a random UUID the server creates with each reservation and returns only to the customer who made it. A purchase must send it, which is how the system knows the buyer is the one holding the reservation.
+
 **Purchase**: the simulated payment that turns a reserved ticket into a sold one. A ticket has at most one purchase, ever.
 
 **Idempotency key**: a client-chosen key sent with a purchase. Repeating a purchase with the same key returns the original result instead of creating a second purchase.
