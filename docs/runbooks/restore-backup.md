@@ -61,38 +61,72 @@ kubectl -n tickets create job --from=cronjob/postgres-backup backup-manual-$(dat
 
 ## Restoring
 
-The restore streams the dump from B2 through your laptop into Postgres over one SSH connection. It does not use the cluster's `b2-backup` Secret, so it also works on a rebuilt server, as long as the Postgres StatefulSet and its Secret exist (see [server-setup.md](server-setup.md#postgres)).
+The restore fetches the dump from B2 to your laptop and sends it into Postgres over SSH. It does not use the cluster's `b2-backup` Secret, so it also works on a rebuilt server, as long as the Postgres StatefulSet and its Secret exist (see [server-setup.md](server-setup.md#postgres)).
 
-1. **Pick the dump.** List the bucket as above and note the file name, for example `tickets-20261030T020000Z.dump`.
+Run every step in Git Bash on your laptop, in one window, since the variables only live there. Paste one command at a time and check that it is still on one line: a command split across lines runs only its first half.
 
-2. **Stop the backend**, so no booking writes to the database while it is being replaced:
-
-   ```
-   ssh root@<server-ip> 'kubectl -n tickets scale deployment/backend --replicas=0'
-   ```
-
-3. **Restore.** `--clean --if-exists` drops each table before recreating it, and `--single-transaction` makes the restore all or nothing: if any step fails, the database is left as it was.
+1. **Set the variables** (the server's IP is not in the repo: ask Philip):
 
    ```
-   docker run --rm --env-file "$HOME/b2.env" amazon/aws-cli:2.39.1 s3 cp s3://tickets-bp-backup/postgres/<file> - --endpoint-url https://s3.eu-central-003.backblazeb2.com | ssh root@<server-ip> 'kubectl -n tickets exec -i postgres-0 -- pg_restore -U postgres -d tickets --clean --if-exists --no-owner --single-transaction'
+   IP=<server-ip>
+   API=https://api.tickets.philipzachariasson.dev
+   ENDPOINT=https://s3.eu-central-003.backblazeb2.com
    ```
 
-4. **Check the data.** There are 5,000 tickets, and the number of sold tickets equals the number of purchases ([ADR 0011](../adr/0011-sold-status-written-with-the-purchase.md)):
+2. **Pick the dump.** The newest one, or set `DUMP` to an older file name from the listing:
 
    ```
-   ssh root@<server-ip> "kubectl -n tickets exec postgres-0 -- psql -U postgres -d tickets -c \"SELECT (SELECT count(*) FROM tickets) AS tickets, (SELECT count(*) FROM tickets WHERE status = 'sold') AS sold, (SELECT count(*) FROM purchases) AS purchases\""
+   DUMP=$(docker run --rm --env-file "$HOME/b2.env" amazon/aws-cli:2.39.1 s3 ls s3://tickets-bp-backup/postgres/ --endpoint-url "$ENDPOINT" | sort | tail -1 | awk '{print $4}' | tr -d '\r'); echo "$DUMP"
    ```
 
-5. **Re-run the latest deploy.** In Actions, open the latest CI run on `main` and choose *Re-run jobs*. The dump includes `schema_migrations`, so the migration Job applies only migrations newer than the dump ([ADR 0007](../adr/0007-migrations-with-dbmate-as-a-job.md)), and the rollout brings the backend back. Without CI, run the deploy by hand ([server-setup.md](server-setup.md#migrations-and-the-deploy-script)).
+3. **Start the clock and stop the backend**, so no booking writes to the database while it is being replaced:
 
-6. **Check the app.** `curl https://api.tickets.philipzachariasson.dev/health` and `GET /tickets?status=sold` return what the dump held.
+   ```
+   START=$(date +%s)
+   ssh root@$IP 'kubectl -n tickets scale deployment/backend --replicas=0'
+   ```
+
+4. **Download the dump** to your home folder, outside the repo, and check that it is not empty:
+
+   ```
+   docker run --rm --env-file "$HOME/b2.env" amazon/aws-cli:2.39.1 s3 cp "s3://tickets-bp-backup/postgres/$DUMP" - --endpoint-url "$ENDPOINT" > "$HOME/restore.dump"
+   ls -l "$HOME/restore.dump"
+   ```
+
+5. **Restore.** `--clean --if-exists` drops each table before recreating it, and `--single-transaction` makes the restore all or nothing: if any step fails, the database is left as it was. No output means it worked.
+
+   ```
+   ssh root@$IP 'kubectl -n tickets exec -i postgres-0 -- pg_restore -U postgres -d tickets --clean --if-exists --no-owner --single-transaction' < "$HOME/restore.dump"
+   ```
+
+6. **Check the data.** There are 5,000 tickets, and the number of sold tickets equals the number of purchases ([ADR 0011](../adr/0011-sold-status-written-with-the-purchase.md)). The query goes in on stdin, so its quotes need no escaping:
+
+   ```
+   echo "SELECT (SELECT count(*) FROM tickets) AS tickets, (SELECT count(*) FROM tickets WHERE status = 'sold') AS sold, (SELECT count(*) FROM purchases) AS purchases;" | ssh root@$IP 'kubectl -n tickets exec -i postgres-0 -- psql -U postgres -d tickets'
+   ```
+
+7. **Re-run the latest deploy.** The dump includes `schema_migrations`, so the migration Job applies only migrations newer than the dump ([ADR 0007](../adr/0007-migrations-with-dbmate-as-a-job.md)), and the rollout brings the backend back. Without CI, run the deploy by hand ([server-setup.md](server-setup.md#migrations-and-the-deploy-script)).
+
+   ```
+   RUN=$(gh run list --branch main --limit 1 --json databaseId --jq '.[0].databaseId'); gh run rerun "$RUN"
+   gh run watch "$RUN"
+   ```
+
+8. **Stop the clock, check the app and clean up.** `/tickets?status=sold` returns what the dump held:
+
+   ```
+   echo "Restore took $(( $(date +%s) - START )) seconds"
+   curl "$API/health"
+   curl -s "$API/tickets?status=sold"
+   rm "$HOME/restore.dump"
+   ```
 
 Every booking made after the dump was taken is gone. Reservations in the dump whose `reserved_until` has passed count as available again, since an expired reservation is treated as available everywhere.
 
 ## Restore log
 
-Every real restore gets a line here: the date, who did it, which dump, and how long steps 2–5 took.
+Every real restore gets a line here: the date, who did it, which dump, and the time from step 3 to step 8.
 
 | Date | Who | Dump | Time | Notes |
 |---|---|---|---|---|
-| | | | | Not done yet: the first test restore closes #17. |
+| 2026-10-29 | Jennifer | `tickets-20261029T180632Z.dump` | 209 s | First test restore, on the live namespace (#17). AMX-00002 was bought before the dump and a second ticket after it. Afterwards only AMX-00002 was sold, and `/health` was ok. |
