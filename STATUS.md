@@ -1,8 +1,8 @@
 # Status
 
-Last updated: 2026-10-27 (changes only when the phase does)
+Last updated: 2026-10-29 (changes only when the phase does)
 
-**Phase:** 1 (G criteria), step 3: tests in the pipeline (2026-10-27 → 10-28). Step 2's window (10-24 → 10-26) ended with the database in place but the app core (#10–#12) and the React frontend (#13) still open, so they run alongside step 3. Every merge to `main` deploys Postgres, runs the migration Job and only then rolls out the backend to `https://api.<domain>` and the frontend to `https://cdn.<domain>`.
+**Phase:** 1 (G criteria), step 4: operations (2026-10-29 → 10-30): backups (#17), metrics and logs (#18) and a low-load k6 script (#19). The app core (#10–#12), unit tests (#14) and integration tests (#15) are done. The React frontend (#13) and Playwright e2e tests (#16) are still open and run alongside step 4. Every merge to `main` deploys Postgres, runs the migration Job and only then rolls out the backend to `https://api.<domain>` and the frontend to `https://cdn.<domain>`.
 
 **What's next, who owns it and what's blocked live in GitHub Issues**, not here:
 
