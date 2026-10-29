@@ -29,6 +29,9 @@ spec:
                 secretKeyRef:
                   name: postgres
                   key: DATABASE_URL
+            # How long a reservation holds a ticket. Lower it for load and spike tests.
+            - name: RESERVATION_SECONDS
+              value: "300"
           readinessProbe:
             httpGet:
               path: /health

@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { toTicket } from '../src/modules/tickets/mapper'
+import { toReservation, toTicket } from '../src/modules/tickets/mapper'
 
 const reservedUntil = new Date('2026-11-04T10:00:00.000Z')
 
@@ -32,4 +32,17 @@ test('a sold ticket has no reservedUntil', () => {
     reserved_until: null,
   })
   expect(ticket.reservedUntil).toBeNull()
+})
+
+test('a reservation returns its ticket, end time and token', () => {
+  const reservation = toReservation({
+    ticket_number: 'AMX-00004',
+    reserved_until: reservedUntil,
+    reservation_token: '9f1c2b7e-3a4d-4e5f-8a6b-1c2d3e4f5a6b',
+  })
+  expect(reservation).toEqual({
+    ticketNumber: 'AMX-00004',
+    reservedUntil: '2026-11-04T10:00:00.000Z',
+    reservationToken: '9f1c2b7e-3a4d-4e5f-8a6b-1c2d3e4f5a6b',
+  })
 })

@@ -1,5 +1,5 @@
 import { sql } from 'bun'
-import type { ListTicketsQuery, TicketRow } from './types'
+import type { ListTicketsQuery, ReservationRow, TicketRow } from './types'
 
 // ADR 0002: every read treats an expired reservation as available, so no
 // background worker has to release tickets. The reserve query (#11) must use
@@ -28,4 +28,29 @@ export async function listTickets(
   `
 
   return { rows, total: Number(rows[0]?.total ?? 0) }
+}
+
+// One statement, so it is its own transaction. SKIP LOCKED lets concurrent
+// reservations each lock a different free row instead of queueing behind the
+// same one (ADR 0002). A new token replaces the one from an expired
+// reservation, so the old holder can no longer buy the ticket.
+export async function reserveTicket(
+  seconds: number,
+): Promise<ReservationRow | null> {
+  const rows: ReservationRow[] = await sql`
+    UPDATE tickets
+    SET status = 'reserved',
+        reserved_until = now() + make_interval(secs => ${seconds}),
+        reservation_token = gen_random_uuid()
+    WHERE id = (
+      SELECT id FROM tickets
+      WHERE ${effectiveStatus} = 'available'
+      ORDER BY id
+      LIMIT 1
+      FOR UPDATE SKIP LOCKED
+    )
+    RETURNING ticket_number, reserved_until, reservation_token
+  `
+
+  return rows[0] ?? null
 }

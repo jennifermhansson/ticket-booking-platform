@@ -31,3 +31,24 @@ export const listTicketsSchema = {
     },
   },
 } as const
+
+export const reserveTicketSchema = {
+  response: {
+    201: {
+      type: 'object',
+      required: ['ticketNumber', 'reservedUntil', 'reservationToken'],
+      properties: {
+        ticketNumber: { type: 'string' },
+        reservedUntil: { type: 'string', format: 'date-time' },
+        reservationToken: { type: 'string', format: 'uuid' },
+      },
+    },
+    409: {
+      type: 'object',
+      required: ['message'],
+      properties: {
+        message: { type: 'string' },
+      },
+    },
+  },
+} as const

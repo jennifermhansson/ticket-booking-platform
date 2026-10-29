@@ -24,3 +24,15 @@ export type ListTicketsQuery = {
   limit: number
   offset: number
 }
+
+export type ReservationRow = {
+  ticket_number: string
+  reserved_until: Date
+  reservation_token: string
+}
+
+export type Reservation = {
+  ticketNumber: string
+  reservedUntil: string
+  reservationToken: string
+}
