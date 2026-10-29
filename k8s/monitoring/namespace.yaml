@@ -1,0 +1,7 @@
+---
+# Not labelled for the Pod Security restricted profile (#53): node-exporter
+# needs hostNetwork, hostPID and hostPath to read the node's own metrics.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
