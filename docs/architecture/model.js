@@ -769,6 +769,13 @@ window.ARCH_MODEL = {
       milestone: 'G',
       issues: [17],
       summary: 'A CronJob runs pg_dump every day and uploads it off the server.',
+      details: [
+        'Runs at 03:00 Europe/Stockholm: pg_dump -Fc in a postgres initContainer, then aws-cli uploads the file.',
+        'Applied by deploy.sh with the rest of k8s/database/; the Secret b2-backup is created by hand.',
+        'RPO is 24 hours: a daily snapshot instead of WAL archiving (ADR 0012).',
+      ],
+      files: ['k8s/database/postgres-backup.yaml', 'k8s/cluster/deploy-rbac.yaml'],
+      adrs: ['0012-daily-pg-dump-to-backblaze-b2'],
     },
     {
       id: 'b2',
@@ -781,6 +788,12 @@ window.ARCH_MODEL = {
       milestone: 'G',
       issues: [17],
       summary: 'Off-site storage for the dumps, so a lost VPS does not take the backups with it.',
+      details: [
+        'Private bucket tickets-bp-backup, files under postgres/, reached through the S3-compatible API.',
+        'A lifecycle rule hides dumps after 30 days and deletes them a day later.',
+      ],
+      files: ['docs/runbooks/restore-backup.md'],
+      adrs: ['0012-daily-pg-dump-to-backblaze-b2'],
     },
     {
       id: 'restore',
@@ -793,6 +806,13 @@ window.ARCH_MODEL = {
       milestone: 'G',
       issues: [17],
       summary: 'A restore that has actually been run, written down in docs/runbooks/.',
+      details: [
+        'Streams a dump from B2 through a laptop into pg_restore over one SSH connection, so it also works on a rebuilt server.',
+        'Re-running the latest deploy afterwards applies migrations newer than the dump (ADR 0007).',
+        'The runbook\'s restore log records each real restore and how long it took (RTO).',
+      ],
+      files: ['docs/runbooks/restore-backup.md'],
+      adrs: ['0012-daily-pg-dump-to-backblaze-b2', '0007-migrations-with-dbmate-as-a-job'],
     },
   ],
 

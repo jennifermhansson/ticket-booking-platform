@@ -159,6 +159,7 @@ unset PW
 
 - Hex needs no URL encoding, so the password goes straight into `DATABASE_URL`.
 - `?sslmode=disable`, because Postgres in the cluster has no TLS (ADR 0007).
+- The Secret `b2-backup`, which holds the Backblaze key for the nightly backup, is created the same way: see [restore-backup.md](restore-backup.md#one-off-setup).
 - `POSTGRES_PASSWORD` is only read when the volume is empty. Changing the Secret later does not change the password of the existing database: change it in Postgres with `ALTER USER postgres PASSWORD '…'` and update both keys of the Secret.
 
 Check it:
