@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { buildApp } from '../src/app'
+import { buildApp } from '../../src/app'
 
 test('GET /health returns 200 and status ok', async () => {
   const server = buildApp()

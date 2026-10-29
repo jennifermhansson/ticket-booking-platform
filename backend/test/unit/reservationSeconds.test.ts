@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { parseReservationSeconds } from '../src/modules/tickets/service'
+import { parseReservationSeconds } from '../../src/modules/tickets/service'
 
 test('defaults to 300 seconds when RESERVATION_SECONDS is not set', () => {
   expect(parseReservationSeconds(undefined)).toBe(300)

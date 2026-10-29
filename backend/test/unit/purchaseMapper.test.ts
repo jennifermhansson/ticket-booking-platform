@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { toPurchase } from '../src/modules/purchases/mapper'
+import { toPurchase } from '../../src/modules/purchases/mapper'
 
 test('a purchase returns its ticket and when it was bought', () => {
   const purchase = toPurchase({

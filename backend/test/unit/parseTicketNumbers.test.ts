@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { parseTicketNumbers } from '../db/parseTicketNumbers'
+import { parseTicketNumbers } from '../../db/parseTicketNumbers'
 
 test('reads ticket numbers and skips a header row', () => {
   const csv = 'ticket_number\nAMX-00001\nAMX-00002\n'

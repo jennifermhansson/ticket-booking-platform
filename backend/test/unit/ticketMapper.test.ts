@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { toReservation, toTicket } from '../src/modules/tickets/mapper'
+import { toReservation, toTicket } from '../../src/modules/tickets/mapper'
 
 const reservedUntil = new Date('2026-11-04T10:00:00.000Z')
 

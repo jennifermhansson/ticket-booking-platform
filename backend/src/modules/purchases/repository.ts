@@ -4,7 +4,7 @@ import type { PurchaseRow } from './types'
 const UNIQUE_VIOLATION = '23505'
 
 // One statement, so marking the ticket sold and inserting the purchase happen
-// together or not at all (ADR 0010). reserved_until > now() is the inverse of
+// together or not at all (ADR 0011). reserved_until > now() is the inverse of
 // the <= in the tickets repository's effectiveStatus, so a reservation ends at
 // the same moment for list, reserve and purchase. A concurrent purchase of the
 // same ticket waits for the row lock, then re-checks the WHERE, finds 'sold'

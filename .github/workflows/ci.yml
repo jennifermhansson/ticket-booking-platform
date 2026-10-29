@@ -41,7 +41,9 @@ jobs:
           bun-version: ${{ env.BUN_VERSION }}
       - run: bun install --frozen-lockfile
       - run: bun run typecheck
-      - run: bun test
+      - run: bun run test
+      # Starts its own Postgres with Testcontainers on the runner's Docker (ADR 0010).
+      - run: bun run test:integration
 
   build:
     needs: [lint, test]

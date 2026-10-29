@@ -215,7 +215,7 @@ window.ARCH_MODEL = {
       milestone: 'G',
       issues: [5],
       summary: 'Returns { status: "ok" }. Used by the readiness and liveness probes and by the CI smoke check.',
-      files: ['backend/src/modules/health/route.ts', 'backend/test/health.test.ts'],
+      files: ['backend/src/modules/health/route.ts', 'backend/test/unit/health.test.ts'],
     },
     {
       id: 'ep-list',
@@ -232,7 +232,7 @@ window.ARCH_MODEL = {
         'Returns { total, tickets }, ordered by ticket number. limit defaults to 100, at most 500.',
         'The status is derived in SQL on every read, so no row is rewritten when a reservation expires.',
       ],
-      files: ['backend/src/modules/tickets/route.ts', 'backend/src/modules/tickets/repository.ts', 'backend/test/tickets.test.ts'],
+      files: ['backend/src/modules/tickets/route.ts', 'backend/src/modules/tickets/repository.ts', 'backend/test/unit/tickets.test.ts'],
       adrs: ['0002-row-per-ticket-with-skip-locked'],
     },
     {
@@ -252,7 +252,7 @@ window.ARCH_MODEL = {
         'An expired reservation is treated as available on every read, so no background worker is needed.',
         'RESERVATION_SECONDS sets how long a reservation holds a ticket (default 300). 201 with the reservation, 409 when no ticket is free.',
       ],
-      files: ['backend/src/modules/tickets/route.ts', 'backend/src/modules/tickets/repository.ts', 'backend/test/reservationSeconds.test.ts'],
+      files: ['backend/src/modules/tickets/route.ts', 'backend/src/modules/tickets/repository.ts', 'backend/test/unit/reservationSeconds.test.ts', 'backend/test/integration/reserveConcurrency.test.ts'],
       adrs: ['0002-row-per-ticket-with-skip-locked', '0009-reservation-token-instead-of-login'],
     },
     {
@@ -271,7 +271,7 @@ window.ARCH_MODEL = {
         'One statement marks the ticket sold and inserts the purchase, so both happen or neither does (ADR 0010).',
         '201 with the purchase, 409 for an unknown, expired, sold or wrong-token reservation, without saying which.',
       ],
-      files: ['backend/src/modules/purchases/route.ts', 'backend/src/modules/purchases/repository.ts', 'backend/test/purchases.test.ts'],
+      files: ['backend/src/modules/purchases/route.ts', 'backend/src/modules/purchases/repository.ts', 'backend/test/unit/purchases.test.ts', 'backend/test/integration/purchaseConcurrency.test.ts'],
       adrs: ['0002-row-per-ticket-with-skip-locked', '0009-reservation-token-instead-of-login', '0010-sold-status-written-with-the-purchase'],
     },
     {
@@ -444,11 +444,11 @@ window.ARCH_MODEL = {
       row: 1,
       kind: 'ci',
       label: 'test',
-      sub: 'typecheck + bun test',
+      sub: 'typecheck + unit tests',
       milestone: 'G',
       issues: [6, 14],
-      summary: 'Typechecks the backend and runs bun test. #14 adds unit tests of the service logic.',
-      files: ['.github/workflows/ci.yml', 'backend/test/parseTicketNumbers.test.ts'],
+      summary: 'Typechecks the backend and runs the unit tests in backend/test/unit, which need no database. #14 adds unit tests of the service logic.',
+      files: ['.github/workflows/ci.yml', 'backend/test/unit/parseTicketNumbers.test.ts'],
     },
     {
       id: 'integration-tests',
@@ -461,8 +461,20 @@ window.ARCH_MODEL = {
       milestone: 'G',
       issues: [15],
       summary:
-        'Tests against a Postgres service container in Actions. One fires N parallel reservations at K tickets and checks that exactly K succeed.',
-      adrs: ['0002-row-per-ticket-with-skip-locked'],
+        'bun run test:integration starts a throwaway Postgres with Testcontainers, runs the migrations and tests the API against it, locally and in Actions. One test fires 200 parallel reservations at 20 tickets and checks that exactly 20 succeed with no duplicates.',
+      details: [
+        'One container for the whole run, preloaded by test/integration/setup.ts. Each test empties the tickets table and inserts only the tickets it needs.',
+        'The tests refuse to run without the preload, so they can never empty the dev database from compose.yaml.',
+      ],
+      files: [
+        '.github/workflows/ci.yml',
+        'backend/test/integration/setup.ts',
+        'backend/test/integration/reserveConcurrency.test.ts',
+      ],
+      adrs: [
+        '0002-row-per-ticket-with-skip-locked',
+        '0010-integration-tests-with-testcontainers',
+      ],
     },
     {
       id: 'e2e-tests',
