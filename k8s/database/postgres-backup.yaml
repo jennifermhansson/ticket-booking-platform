@@ -1,0 +1,93 @@
+---
+# Daily pg_dump to Backblaze B2 (ADR 0012). Applied by deploy.sh with the rest
+# of database/. The Secret b2-backup is created by hand: see
+# docs/runbooks/restore-backup.md, which also covers the restore.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: postgres-backup
+  labels:
+    app: postgres-backup
+spec:
+  schedule: "0 3 * * *"
+  timeZone: Europe/Stockholm
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 600
+      template:
+        metadata:
+          labels:
+            app: postgres-backup
+        spec:
+          restartPolicy: Never
+          # The dump is written by one container and uploaded by the next, so
+          # neither needs a custom image with both pg_dump and aws-cli.
+          initContainers:
+            - name: dump
+              # Same major version as the server: pg_dump refuses newer servers.
+              image: postgres:16.15-alpine
+              command:
+                - sh
+                - -c
+                - pg_dump "$DATABASE_URL" -Fc -f "/backup/tickets-$(date -u +%Y%m%dT%H%M%SZ).dump"
+              env:
+                - name: DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres
+                      key: DATABASE_URL
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+                limits:
+                  memory: 256Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+              volumeMounts:
+                - name: backup
+                  mountPath: /backup
+          containers:
+            - name: upload
+              image: amazon/aws-cli:2.39.1
+              args:
+                - s3
+                - cp
+                - /backup/
+                - s3://$(B2_BUCKET)/postgres/
+                - --recursive
+                - --endpoint-url
+                - $(B2_ENDPOINT)
+              env:
+                - name: B2_BUCKET
+                  value: tickets-bp-backup
+                - name: B2_ENDPOINT
+                  value: https://s3.eu-central-003.backblazeb2.com
+                - name: AWS_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: b2-backup
+                      key: AWS_ACCESS_KEY_ID
+                - name: AWS_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: b2-backup
+                      key: AWS_SECRET_ACCESS_KEY
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+                limits:
+                  memory: 256Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+              volumeMounts:
+                - name: backup
+                  mountPath: /backup
+          volumes:
+            - name: backup
+              emptyDir: {}
