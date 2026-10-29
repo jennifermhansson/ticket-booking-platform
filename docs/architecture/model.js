@@ -271,7 +271,7 @@ window.ARCH_MODEL = {
         'One statement marks the ticket sold and inserts the purchase, so both happen or neither does (ADR 0010).',
         '201 with the purchase, 409 for an unknown, expired, sold or wrong-token reservation, without saying which.',
       ],
-      files: ['backend/src/modules/purchases/route.ts', 'backend/src/modules/purchases/repository.ts', 'backend/test/purchases.test.ts'],
+      files: ['backend/src/modules/purchases/route.ts', 'backend/src/modules/purchases/repository.ts', 'backend/test/unit/purchases.test.ts', 'backend/test/integration/purchaseConcurrency.test.ts'],
       adrs: ['0002-row-per-ticket-with-skip-locked', '0009-reservation-token-instead-of-login', '0010-sold-status-written-with-the-purchase'],
     },
     {

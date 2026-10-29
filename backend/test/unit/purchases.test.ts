@@ -1,5 +1,5 @@
 import { afterAll, expect, test } from 'bun:test'
-import { buildApp } from '../src/app'
+import { buildApp } from '../../src/app'
 
 // Validation rejects these before the handler runs, so no database is needed.
 const server = buildApp()

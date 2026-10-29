@@ -19,7 +19,7 @@ export function secondsFromNow(seconds: number): Date {
   return new Date(Date.now() + seconds * 1000)
 }
 
-// Empties the tickets table and inserts exactly what the test needs.
+// Empties the tickets and purchases tables and inserts exactly what the test needs.
 export async function resetTickets(tickets: SeedTicket[]): Promise<void> {
   // setup.ts sets both. Without the preload DATABASE_URL comes from .env, and
   // TRUNCATE would wipe the dev database.
@@ -32,7 +32,8 @@ export async function resetTickets(tickets: SeedTicket[]): Promise<void> {
     )
   }
 
-  await sql`TRUNCATE tickets RESTART IDENTITY`
+  // purchases references tickets, so both empty in one statement.
+  await sql`TRUNCATE purchases, tickets RESTART IDENTITY`
   if (tickets.length === 0) return
 
   // Every row needs every column: sql(rows) takes its columns from the rows,
