@@ -732,7 +732,8 @@ window.ARCH_MODEL = {
       sub: '2–3 days retention',
       milestone: 'G',
       issues: [18],
-      summary: 'Scrapes metrics from the cluster and the backend. Lean: short retention and no Alertmanager.',
+      summary:
+        'Scrapes the cluster (CPU and memory per pod, pod counts) and Traefik (requests per second, response times, status codes). Lean: short retention and no Alertmanager.',
     },
     {
       id: 'loki',
@@ -744,7 +745,20 @@ window.ARCH_MODEL = {
       sub: 'single binary',
       milestone: 'G',
       issues: [18],
-      summary: 'Collects the pods\' logs, including Fastify\'s JSON logs.',
+      summary: 'Alloy collects the pods\' logs, including Fastify\'s JSON logs, and sends them to Loki.',
+    },
+    {
+      id: 'backend-metrics',
+      view: 'ops',
+      col: 1,
+      row: 0,
+      kind: 'ops',
+      label: 'Backend /metrics',
+      sub: 'business metrics',
+      milestone: 'Extras',
+      issues: [74],
+      summary:
+        'Tickets sold, active reservations and time in the reserve transaction, from the backend itself on a port the Ingress does not expose.',
     },
     {
       id: 'grafana',
@@ -869,6 +883,7 @@ window.ARCH_MODEL = {
     { from: 'cluster', to: 'backup-cronjob' },
     { from: 'prometheus', to: 'grafana' },
     { from: 'loki', to: 'grafana' },
+    { from: 'backend-metrics', to: 'prometheus' },
     { from: 'backup-cronjob', to: 'b2', label: 'pg_dump' },
     { from: 'b2', to: 'restore' },
   ],
