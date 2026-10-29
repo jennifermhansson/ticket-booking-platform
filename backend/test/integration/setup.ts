@@ -3,30 +3,18 @@ import { PostgreSqlContainer } from '@testcontainers/postgresql'
 import { $, sql } from 'bun'
 import { Wait } from 'testcontainers'
 
-// Preloaded by `bun run test:integration` (ADR 0010): one throwaway Postgres
-// for the whole run, so the tests never touch the dev database in compose.yaml.
-
-// Same image as k8s/database/postgres.yaml.
+// One Postgres for the whole run (ADR 0010), same image as production.
 const container = await new PostgreSqlContainer('postgres:16.15-alpine')
-  // The default strategy also waits for the internal port with `docker exec`,
-  // which hangs under Bun. The image's health check runs pg_isready over TCP,
-  // so it only passes once the real server (not the init one) is up.
+  // The module's default also checks the port with `docker exec`, which hangs under Bun.
   .withWaitStrategy(Wait.forHealthCheck())
   .start()
 
-const databaseUrl = `${container.getConnectionUri()}?sslmode=disable`
+// lib/pq (dbmate's driver) requires SSL by default, and the test container has
+// none. Without this, `migrate --wait` retries for 60 s before it fails.
+process.env.DATABASE_URL = `${container.getConnectionUri()}?sslmode=disable`
+process.env.TEST_DATABASE_URL = process.env.DATABASE_URL
 
-// Overrides the DATABASE_URL Bun loaded from .env, before any test file
-// imports the app and with it Bun's default sql client.
-process.env.DATABASE_URL = databaseUrl
-process.env.TEST_DATABASE_URL = databaseUrl
-
-// The same script and flags production uses, so the tests run against the
-// schema the migration Job creates (ADR 0007).
-await $`bun run migrate`
-  .cwd(`${import.meta.dir}/../..`)
-  .env({ ...process.env, DATABASE_URL: databaseUrl })
-  .quiet()
+await $`bun run migrate`.quiet()
 
 afterAll(async () => {
   await sql.close()
