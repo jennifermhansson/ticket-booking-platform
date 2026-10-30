@@ -44,6 +44,13 @@ jobs:
       - run: bun run test
       # Starts its own Postgres with Testcontainers on the runner's Docker (ADR 0010).
       - run: bun run test:integration
+      # The frontend's own checks. Its image build runs in the build job.
+      - run: bun install --frozen-lockfile
+        working-directory: frontend
+      - run: bun run typecheck
+        working-directory: frontend
+      - run: bun run test
+        working-directory: frontend
 
   build:
     needs: [lint, test]

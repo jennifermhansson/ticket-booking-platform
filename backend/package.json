@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@fastify/cors": "^11.3.1",
     "fastify": "^5.12.7"
   },
   "devDependencies": {

@@ -68,7 +68,7 @@ A phase starts only when the one before it is done (see [ADR 0003](adr/0003-prio
 
 **4. Operations (10-29 → 10-30)**
 - Backup: a CronJob runs `pg_dump` to Backblaze B2. **Test a restore** and write a short runbook in `docs/runbooks/`.
-- Metrics and logs: Prometheus, Grafana and Loki in a lean configuration (see the RAM section), plus a dashboard.
+- Metrics and logs: Prometheus, Grafana and Loki in a lean configuration (see the RAM section), plus a dashboard. Requests per second, response times and errors come from Traefik's metrics, which need no backend code and also count the 502s when no pod answers. The backend's own `/metrics` with business metrics (tickets sold, active reservations) is an extra (#74).
 - A **simple low-load k6 script**, so that Grafana has requests per second, response times, errors and logs to show.
 - ✅ 10-30: **all G criteria done.**
 
@@ -111,6 +111,7 @@ Run `kubectl top nodes` on 10-30. If RAM is above about 80 %, upgrade the VPS th
 ## Working together
 
 - Pair-program the infrastructure skeleton.
+- When we sit together, we pair on the DevOps work we know least (backups, monitoring, load tests, Kubernetes) and take simpler tasks such as the frontend and tests remotely (decided 2026-10-29).
 - Daily teach-back: whoever built something explains it to the other.
 - One issue, one branch and one PR per task, reviewed by the other. Questions in the defence are individual.
 

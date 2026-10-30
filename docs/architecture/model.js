@@ -136,11 +136,12 @@ window.ARCH_MODEL = {
       summary:
         'An unprivileged nginx image with the static files copied in at build time, behind its own Service and Ingress.',
       details: [
-        '#7 serves a static page today; #13 replaces it with the minimal React + Vite app.',
+        'A minimal React + Vite app (#13): ticket counts per state, a paged ticket list, and reserve and buy with a countdown.',
+        'The Docker build runs vite build and copies dist/ into nginx; the API address comes from .env.production at build time.',
         'A changed page ships as a new image, so the deploy Role needs no ConfigMaps (ADR 0008).',
         'Readiness and liveness probes on /.',
       ],
-      files: ['k8s/frontend.yaml', 'frontend/Dockerfile', 'frontend/public/index.html'],
+      files: ['k8s/frontend.yaml', 'frontend/Dockerfile', 'frontend/index.html', 'frontend/src/bookingPanel.tsx', 'frontend/src/api.ts'],
       adrs: ['0008-static-files-from-nginx-pod'],
     },
     {
@@ -171,8 +172,9 @@ window.ARCH_MODEL = {
         'Readiness probe on /health every 5 s; liveness every 10 s.',
         'Requests 100m CPU and 128 Mi, limit 256 Mi. The requests are what the HPA will measure against.',
         'replicas: 1 today. VG needs 2+.',
+        'CORS lets only the origins in CORS_ORIGINS call it from a browser: https://cdn.<domain> in the cluster (#13).',
       ],
-      files: ['k8s/backend.yaml', 'backend/Dockerfile', 'backend/src/app.ts', 'backend/src/server.ts'],
+      files: ['k8s/backend.yaml', 'backend/Dockerfile', 'backend/src/app.ts', 'backend/src/server.ts', 'backend/src/cors.ts'],
     },
     {
       id: 'replicas',
@@ -732,7 +734,8 @@ window.ARCH_MODEL = {
       sub: '2–3 days retention',
       milestone: 'G',
       issues: [18],
-      summary: 'Scrapes metrics from the cluster and the backend. Lean: short retention and no Alertmanager.',
+      summary:
+        'Scrapes the cluster (CPU and memory per pod, pod counts) and Traefik (requests per second, response times, status codes). Lean: short retention and no Alertmanager.',
     },
     {
       id: 'loki',
@@ -744,7 +747,20 @@ window.ARCH_MODEL = {
       sub: 'single binary',
       milestone: 'G',
       issues: [18],
-      summary: 'Collects the pods\' logs, including Fastify\'s JSON logs.',
+      summary: 'Alloy collects the pods\' logs, including Fastify\'s JSON logs, and sends them to Loki.',
+    },
+    {
+      id: 'backend-metrics',
+      view: 'ops',
+      col: 1,
+      row: 0,
+      kind: 'ops',
+      label: 'Backend /metrics',
+      sub: 'business metrics',
+      milestone: 'Extras',
+      issues: [74],
+      summary:
+        'Tickets sold, active reservations and time in the reserve transaction, from the backend itself on a port the Ingress does not expose.',
     },
     {
       id: 'grafana',
@@ -869,6 +885,7 @@ window.ARCH_MODEL = {
     { from: 'cluster', to: 'backup-cronjob' },
     { from: 'prometheus', to: 'grafana' },
     { from: 'loki', to: 'grafana' },
+    { from: 'backend-metrics', to: 'prometheus' },
     { from: 'backup-cronjob', to: 'b2', label: 'pg_dump' },
     { from: 'b2', to: 'restore' },
   ],
