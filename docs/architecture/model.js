@@ -136,11 +136,12 @@ window.ARCH_MODEL = {
       summary:
         'An unprivileged nginx image with the static files copied in at build time, behind its own Service and Ingress.',
       details: [
-        '#7 serves a static page today; #13 replaces it with the minimal React + Vite app.',
+        'A minimal React + Vite app (#13): ticket counts per state, a paged ticket list, and reserve and buy with a countdown.',
+        'The Docker build runs vite build and copies dist/ into nginx; the API address comes from .env.production at build time.',
         'A changed page ships as a new image, so the deploy Role needs no ConfigMaps (ADR 0008).',
         'Readiness and liveness probes on /.',
       ],
-      files: ['k8s/frontend.yaml', 'frontend/Dockerfile', 'frontend/public/index.html'],
+      files: ['k8s/frontend.yaml', 'frontend/Dockerfile', 'frontend/index.html', 'frontend/src/bookingPanel.tsx', 'frontend/src/api.ts'],
       adrs: ['0008-static-files-from-nginx-pod'],
     },
     {
@@ -171,8 +172,9 @@ window.ARCH_MODEL = {
         'Readiness probe on /health every 5 s; liveness every 10 s.',
         'Requests 100m CPU and 128 Mi, limit 256 Mi. The requests are what the HPA will measure against.',
         'replicas: 1 today. VG needs 2+.',
+        'CORS lets only the origins in CORS_ORIGINS call it from a browser: https://cdn.<domain> in the cluster (#13).',
       ],
-      files: ['k8s/backend.yaml', 'backend/Dockerfile', 'backend/src/app.ts', 'backend/src/server.ts'],
+      files: ['k8s/backend.yaml', 'backend/Dockerfile', 'backend/src/app.ts', 'backend/src/server.ts', 'backend/src/cors.ts'],
     },
     {
       id: 'replicas',
