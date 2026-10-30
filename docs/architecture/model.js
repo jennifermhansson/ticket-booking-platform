@@ -736,6 +736,14 @@ window.ARCH_MODEL = {
       issues: [18],
       summary:
         'Scrapes the cluster (CPU and memory per pod, pod counts) and Traefik (requests per second, response times, status codes). Lean: short retention and no Alertmanager.',
+      details: [
+        'Three sources, three questions. Traefik: how do users experience the system? kube-state-metrics: what is Kubernetes trying to do? The kubelet\'s cAdvisor: what does it cost in resources?',
+        'Traefik counts per Service, so it also sees the 502s when no backend pod answers, which is what a zero-downtime rollout has to show.',
+        'No node-exporter: no panel needs node metrics, and it would need host access and an open port 9100.',
+        'Installed with kube-prometheus-stack as a k3s HelmChart, applied by hand as root, not by CI.',
+      ],
+      files: ['k8s/monitoring/kube-prometheus-stack.yaml', 'k8s/cluster/traefik-config.yaml'],
+      adrs: ['0013-monitoring-stack'],
     },
     {
       id: 'loki',
@@ -748,6 +756,13 @@ window.ARCH_MODEL = {
       milestone: 'G',
       issues: [18],
       summary: 'Alloy collects the pods\' logs, including Fastify\'s JSON logs, and sends them to Loki.',
+      details: [
+        'Alloy reads the logs through the Kubernetes API, so it needs no hostPath mounts. It replaces the deprecated Promtail.',
+        'Logs are searched by namespace and app label, for example {namespace="tickets", app="backend"}. Kept for 72 hours.',
+        'Loki\'s memcached caches are turned off, or they reserve several GB on the 8 GB node.',
+      ],
+      files: ['k8s/monitoring/loki.yaml', 'k8s/monitoring/alloy.yaml'],
+      adrs: ['0013-monitoring-stack'],
     },
     {
       id: 'backend-metrics',
@@ -773,6 +788,13 @@ window.ARCH_MODEL = {
       milestone: 'G',
       issues: [18],
       summary: 'One dashboard with metrics and logs, shown in the defence and linked from the README.',
+      details: [
+        'Panels: requests per second, response times (p50, p95, p99), responses by status code and the 5xx rate from Traefik; backend pods and HPA replicas from kube-state-metrics; CPU and memory per pod from cAdvisor; logs from Loki.',
+        'In an autoscaling run the sources show cause, reaction and effect: CPU per pod rises, the HPA raises its desired replicas, and response times fall again.',
+        'The dashboard is a ConfigMap that Grafana\'s sidecar loads; the admin password is a Secret created by hand.',
+      ],
+      files: ['k8s/monitoring/dashboard-tickets.yaml', 'docs/runbooks/monitoring.md'],
+      adrs: ['0013-monitoring-stack'],
     },
     {
       id: 'backup-cronjob',
