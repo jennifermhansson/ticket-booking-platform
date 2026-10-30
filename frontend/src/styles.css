@@ -1,0 +1,146 @@
+:root {
+  --bg: #ffffff;
+  --fg: #1d1d1f;
+  --muted: #6e6e73;
+  --line: #d2d2d7;
+  --accent: #0b5cad;
+  --available: #1e7d32;
+  --reserved: #b26b00;
+  --sold: #b3261e;
+  font-family: system-ui, sans-serif;
+  color: var(--fg);
+  background: var(--bg);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #161618;
+    --fg: #f2f2f7;
+    --muted: #a1a1a6;
+    --line: #3a3a3c;
+    --accent: #5aa2f0;
+    --available: #6cc070;
+    --reserved: #f0b14a;
+    --sold: #f2766b;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+}
+
+main {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+h1 {
+  margin-top: 0;
+}
+
+button {
+  font: inherit;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--bg);
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.filters button,
+.pager button {
+  background: transparent;
+  color: var(--accent);
+}
+
+.filters button[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.filters,
+.pager {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.counts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin: 0 0 1.5rem;
+}
+
+.count {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.75rem;
+}
+
+.count dt {
+  color: var(--muted);
+  text-transform: capitalize;
+}
+
+.count dd {
+  margin: 0.25rem 0 0;
+  font-size: 1.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.booking {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.booking h2 {
+  margin-top: 0;
+}
+
+.countdown {
+  font-variant-numeric: tabular-nums;
+}
+
+.success {
+  color: var(--available);
+}
+
+.error {
+  color: var(--sold);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75rem 0;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid var(--line);
+}
+
+td.available {
+  color: var(--available);
+}
+
+td.reserved {
+  color: var(--reserved);
+}
+
+td.sold {
+  color: var(--sold);
+}
