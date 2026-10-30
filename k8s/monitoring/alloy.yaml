@@ -1,0 +1,63 @@
+---
+# Alloy ships every pod's logs to Loki (ADR 0013). It reads them through the
+# Kubernetes API, so it needs no hostPath mounts of /var/log.
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: alloy
+  namespace: kube-system
+spec:
+  repo: https://grafana.github.io/helm-charts
+  chart: alloy
+  version: 1.14.4
+  targetNamespace: monitoring
+  valuesContent: |-
+    # The PodLogs CRD is unused: discovery below finds every pod.
+    crds:
+      create: false
+    alloy:
+      enableReporting: false
+      resources:
+        requests:
+          cpu: 20m
+          memory: 64Mi
+        limits:
+          memory: 256Mi
+      configMap:
+        content: |-
+          discovery.kubernetes "pods" {
+            role = "pod"
+          }
+
+          // The labels logs are searched by in Grafana: {namespace="tickets", app="backend"}.
+          discovery.relabel "pods" {
+            targets = discovery.kubernetes.pods.targets
+
+            rule {
+              source_labels = ["__meta_kubernetes_namespace"]
+              target_label  = "namespace"
+            }
+            rule {
+              source_labels = ["__meta_kubernetes_pod_name"]
+              target_label  = "pod"
+            }
+            rule {
+              source_labels = ["__meta_kubernetes_pod_container_name"]
+              target_label  = "container"
+            }
+            rule {
+              source_labels = ["__meta_kubernetes_pod_label_app"]
+              target_label  = "app"
+            }
+          }
+
+          loki.source.kubernetes "pods" {
+            targets    = discovery.relabel.pods.output
+            forward_to = [loki.write.default.receiver]
+          }
+
+          loki.write "default" {
+            endpoint {
+              url = "http://loki.monitoring:3100/loki/api/v1/push"
+            }
+          }

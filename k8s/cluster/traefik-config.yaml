@@ -15,3 +15,15 @@ spec:
         # to Traefik's ClusterIP, not to the NodePorts, so they only add
         # open ports. Recheck before setting externalTrafficPolicy: Local.
         allocateLoadBalancerNodePorts: false
+    # Requests per second, response times and status codes per Kubernetes
+    # service, for the Grafana dashboard (ADR 0013). Apply after
+    # kube-prometheus-stack: the chart skips the ServiceMonitor until its CRD
+    # exists. The finer buckets replace the default 0.1/0.3/1.2/5 s, too
+    # coarse for a p95 of a few milliseconds.
+    metrics:
+      prometheus:
+        buckets: "0.005,0.01,0.025,0.05,0.1,0.25,0.5,1,2.5,5"
+        service:
+          enabled: true
+        serviceMonitor:
+          enabled: true
