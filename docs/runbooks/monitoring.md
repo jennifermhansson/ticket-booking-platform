@@ -4,7 +4,7 @@ Grafana at `https://grafana.tickets.philipzachariasson.dev` shows the **Tickets*
 
 | Part | Manifest | What it does |
 |---|---|---|
-| kube-prometheus-stack | [`k8s/monitoring/kube-prometheus-stack.yaml`](../../k8s/monitoring/kube-prometheus-stack.yaml) | Prometheus, Grafana, node-exporter, kube-state-metrics and the Prometheus Operator |
+| kube-prometheus-stack | [`k8s/monitoring/kube-prometheus-stack.yaml`](../../k8s/monitoring/kube-prometheus-stack.yaml) | Prometheus, Grafana, kube-state-metrics and the Prometheus Operator; node-exporter is turned off |
 | Traefik metrics | [`k8s/cluster/traefik-config.yaml`](../../k8s/cluster/traefik-config.yaml) | A `traefik-metrics` Service and a ServiceMonitor in `kube-system` |
 | Loki | [`k8s/monitoring/loki.yaml`](../../k8s/monitoring/loki.yaml) | Stores the logs, one pod with a 5Gi volume |
 | Alloy | [`k8s/monitoring/alloy.yaml`](../../k8s/monitoring/alloy.yaml) | Reads every pod's logs through the Kubernetes API and sends them to Loki |
@@ -75,7 +75,7 @@ Measured on 2026-10-29 with the whole stack running and the app idle: `kubectl t
 | Prometheus | about 310 Mi |
 | Loki | about 75 Mi |
 | Alloy | about 60 Mi |
-| Operator, kube-state-metrics, node-exporter | about 50 Mi together |
+| Operator, kube-state-metrics and node-exporter (since turned off) | about 50 Mi together |
 
 That is about 950 Mi, well under the 80 % at which [the plan](../plan.md#ram-on-8-gb) says to upgrade the VPS. Measure again under load (#19, #25).
 
@@ -84,4 +84,3 @@ That is about 950 Mi, well under the 80 % at which [the plan](../plan.md#ram-on-
 - **Grafana OOMKilled at its first start.** With a 256Mi limit, Grafana was killed while it ran its database migrations. The limit is now 512Mi. If it happens again, check `kubectl -n monitoring get pod -l app.kubernetes.io/name=grafana -o jsonpath='{.items[0].status.containerStatuses[0].lastState}'`.
 - **The Loki chart moves fast.** It lives in `grafana-community/helm-charts` now, changes major version often, and since 20.0.0 refuses unknown top-level values. Before an upgrade, render it locally with `helm template` and the values from `loki.yaml`, and read the release notes.
 - **Loki's caches.** The chart starts memcached caches that reserve several GB of RAM unless `chunksCache` and `resultsCache` are turned off, as they are here.
-- **Port 9100.** node-exporter listens on the host's port 9100 without authentication. ufw keeps it private; the port scan in [server-setup.md](server-setup.md#checking-open-ports-from-outside) should show it `filtered`.

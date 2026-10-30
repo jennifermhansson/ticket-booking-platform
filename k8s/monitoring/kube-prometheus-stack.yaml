@@ -1,5 +1,5 @@
 ---
-# Prometheus, Grafana, node-exporter and kube-state-metrics (ADR 0013),
+# Prometheus, Grafana and kube-state-metrics (ADR 0013),
 # installed by k3s's Helm controller like cert-manager. Kept lean for the
 # 8 GB node: no Alertmanager, no alert or recording rules, short retention.
 apiVersion: helm.cattle.io/v1
@@ -74,13 +74,11 @@ spec:
         limits:
           memory: 128Mi
 
-    prometheus-node-exporter:
-      resources:
-        requests:
-          cpu: 10m
-          memory: 24Mi
-        limits:
-          memory: 64Mi
+    # No panel reads node metrics: CPU and memory per pod come from the
+    # kubelet's cAdvisor. node-exporter would need hostNetwork, hostPID and
+    # hostPath, and an unauthenticated port 9100 on the host.
+    nodeExporter:
+      enabled: false
 
     grafana:
       # The tickets dashboard is ours (dashboard-tickets.yaml); the stock

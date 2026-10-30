@@ -1,6 +1,6 @@
 ---
-# Not labelled for the Pod Security restricted profile (#53): node-exporter
-# needs hostNetwork, hostPID and hostPath to read the node's own metrics.
+# Not labelled for the Pod Security restricted profile yet: the charts'
+# pods have not been checked against it (ADR 0013).
 apiVersion: v1
 kind: Namespace
 metadata:
