@@ -490,7 +490,20 @@ window.ARCH_MODEL = {
       sub: 'Playwright',
       milestone: 'G',
       issues: [16],
-      summary: 'Playwright drives the running stack through the browser.',
+      summary:
+        'Playwright drives the real stack through a browser. One test reserves a ticket on the page, buys it and checks the sold count goes up by one. The other lets two customers in two browsers go for the last ticket and checks that exactly one gets it and the database holds one sale. Runs as the e2e job in Actions and on a laptop, against a throwaway Postgres from Testcontainers.',
+      details: [
+        'e2e/run.ts starts and migrates the container, then runs Playwright. playwright.config.ts starts the backend and the built frontend (VITE_API_URL points at the local backend), so the same command runs on a laptop and in CI.',
+        'Each test empties tickets and seeds what it needs (frontend/e2e/db.ts), which refuses to run without the database run.ts started.',
+      ],
+      files: [
+        '.github/workflows/ci.yml',
+        'frontend/e2e/run.ts',
+        'frontend/playwright.config.ts',
+        'frontend/e2e/reserveAndBuy.spec.ts',
+        'frontend/e2e/lastTicket.spec.ts',
+      ],
+      adrs: ['0010-integration-tests-with-testcontainers'],
     },
     {
       id: 'manifest-check',
