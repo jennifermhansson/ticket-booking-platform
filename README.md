@@ -34,11 +34,12 @@ bun run test:integration
 - `bun run test:integration` needs Docker running. It starts its own Postgres with Testcontainers, runs the migrations and tests the API against it, so it never touches the database from `docker compose up` ([ADR 0010](docs/adr/0010-integration-tests-with-testcontainers.md)).
 - Run them through these scripts, not a bare `bun test`: the integration tests refuse to run without the preload that starts their database.
 
-The e2e tests are Playwright tests in `frontend/e2e/`. Each test empties `tickets` and inserts the tickets it needs, so they refuse any database that is not on localhost, and on the dev database from `docker compose up` you run `bun run import` afterwards to get the 5000 tickets back. With that Postgres migrated (see above), from `frontend/`:
+The e2e tests are Playwright tests in `frontend/e2e/`. From `frontend/`, with Docker running:
 
 ```
 bunx playwright install chromium
 bun run test:e2e
 ```
 
-- `playwright.config.ts` starts the backend and builds and serves the frontend itself, so only the database has to be running. Set `DATABASE_URL` to use another one than `compose.yaml`.
+- `bun run test:e2e` starts and migrates its own Postgres with Testcontainers, like the integration tests, so it never touches the database from `docker compose up`. `playwright.config.ts` then starts the backend and builds and serves the frontend, so ports 3000 and 4173 have to be free.
+- On Windows, Testcontainers needs Bun 1.4 or later for both these and the integration tests, since Bun 1.3.6 cannot reach Docker's named pipe. CI runs on Linux and is not affected.

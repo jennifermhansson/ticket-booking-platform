@@ -12,6 +12,8 @@
 
 - Testcontainers' default wait strategy also checks the port from inside the container with `docker exec`, and that hangs under Bun. `setup.ts` waits only for the image's health check, which runs `pg_isready` over TCP and so passes only once the real server is up, not the temporary one during init.
 - The tests refuse to run unless the preload has set `DATABASE_URL`, so a plain `bun test` can never empty the dev database. `bun run test` runs only `test/unit`, which needs no database.
+- The e2e tests (#16) follow the same decision: `frontend/e2e/run.ts` starts the same image, migrates it and runs Playwright against it, instead of a service container in CI and the dev database locally.
+- On Windows, Testcontainers needs Bun 1.4 or later: Bun 1.3.6 cannot reach Docker's named pipe. Linux, which CI runs on, is not affected.
 - Running the integration tests needs Docker, and each run spends about two seconds starting the container.
 - The migrations run with the same script and flags as the migration Job ([ADR 0007](0007-migrations-with-dbmate-as-a-job.md)), so the tests see the schema production gets.
 - **In the defence:** asked "how do you know you never sell a ticket twice?", the answer is `reserveConcurrency.test.ts`: 200 parallel reservations for 20 tickets give exactly 20 reservations, and with `SKIP LOCKED` removed the same test fails with 36.
