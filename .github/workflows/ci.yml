@@ -52,8 +52,34 @@ jobs:
       - run: bun run test
         working-directory: frontend
 
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - uses: oven-sh/setup-bun@v2.0.2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - run: bun install --frozen-lockfile
+        working-directory: backend
+      - run: bun install --frozen-lockfile
+        working-directory: frontend
+      - run: bunx playwright install --with-deps chromium
+        working-directory: frontend
+      # Starts its own Postgres with Testcontainers on the runner's Docker (ADR 0010),
+      # and playwright.config.ts starts the backend and the built frontend.
+      - run: bun run test:e2e
+        working-directory: frontend
+      - uses: actions/upload-artifact@v4.6.2
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+          retention-days: 7
+
   build:
-    needs: [lint, test]
+    needs: [lint, test, e2e]
     runs-on: ubuntu-latest
     strategy:
       matrix:
