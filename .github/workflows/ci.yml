@@ -74,12 +74,12 @@ jobs:
       - uses: oven-sh/setup-bun@v2.0.2
         with:
           bun-version: ${{ env.BUN_VERSION }}
-      - name: Migrate and seed the database
+      # The tests seed the tickets they need themselves.
+      - name: Migrate the database
         working-directory: backend
         run: |
           bun install --frozen-lockfile
           bun run migrate
-          bun run import
       - run: bun install --frozen-lockfile
         working-directory: frontend
       - run: bunx playwright install --with-deps chromium

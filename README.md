@@ -34,7 +34,7 @@ bun run test:integration
 - `bun run test:integration` needs Docker running. It starts its own Postgres with Testcontainers, runs the migrations and tests the API against it, so it never touches the database from `docker compose up` ([ADR 0010](docs/adr/0010-integration-tests-with-testcontainers.md)).
 - Run them through these scripts, not a bare `bun test`: the integration tests refuse to run without the preload that starts their database.
 
-The e2e tests are Playwright tests in `frontend/e2e/`. They buy real tickets, so run them against a local database, never production. With Postgres from `docker compose up` migrated and seeded (see above), from `frontend/`:
+The e2e tests are Playwright tests in `frontend/e2e/`. Each test empties `tickets` and inserts the tickets it needs, so they refuse any database that is not on localhost, and on the dev database from `docker compose up` you run `bun run import` afterwards to get the 5000 tickets back. With that Postgres migrated (see above), from `frontend/`:
 
 ```
 bunx playwright install chromium

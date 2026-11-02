@@ -1,10 +1,13 @@
 import { expect, type Page, test } from '@playwright/test'
+import { resetTickets } from './db'
 
 // The count shows "1,234", so the thousands separator comes out first.
 async function soldCount(page: Page): Promise<number> {
   const text = await page.locator('.count.sold dd').textContent()
   return Number((text ?? '').replaceAll(',', ''))
 }
+
+test.beforeEach(() => resetTickets(20))
 
 test('a customer reserves a ticket and buys it', async ({ page }) => {
   await page.goto('/')
