@@ -10,7 +10,7 @@ window.ARCH_MODEL = {
   // Extras polish of a part that is already on the map (78, 80, 81), so an
   // open extra does not keep a finished node "In progress".
   // Any other issue that no node lists shows up under "Not on the map".
-  unmappedOnPurpose: [2, 20, 26, 27, 36, 44, 46, 48, 57, 63, 64, 78, 80, 81],
+  unmappedOnPurpose: [2, 20, 26, 27, 36, 44, 46, 48, 57, 63, 64, 78, 80, 81, 83, 88],
 
   views: [
     {
@@ -59,12 +59,15 @@ window.ARCH_MODEL = {
       row: 1,
       kind: 'network',
       label: 'DNS',
-      sub: 'api · cdn · grafana',
+      sub: '*.tickets → VPS',
       milestone: 'G',
       issues: [3],
       summary:
-        'api, cdn and grafana under tickets.philipzachariasson.dev point at the VPS. The root domain stays free for other use.',
-      details: ['<domain> in the docs means tickets.philipzachariasson.dev.'],
+        'Two A records, tickets and the wildcard *.tickets, point every name under tickets.philipzachariasson.dev at the VPS. api., cdn. and grafana. all get the same IP: DNS does not pick the service, Traefik does, by host name.',
+      details: [
+        'A new host name needs no DNS change, because the wildcard already covers it.',
+        '<domain> in the docs means tickets.philipzachariasson.dev. The root domain stays free for other use.',
+      ],
       files: ['docs/runbooks/server-setup.md'],
     },
     {
@@ -91,7 +94,8 @@ window.ARCH_MODEL = {
     {
       id: 'waiting-room',
       view: 'request',
-      col: 2,
+      inCluster: true,
+      col: 3,
       row: 3,
       kind: 'k8s',
       label: 'Waiting room',
@@ -104,6 +108,7 @@ window.ARCH_MODEL = {
     {
       id: 'traefik',
       view: 'request',
+      inCluster: true,
       col: 3,
       row: 1,
       kind: 'k8s',
@@ -128,6 +133,7 @@ window.ARCH_MODEL = {
     {
       id: 'frontend',
       view: 'request',
+      inCluster: true,
       col: 4,
       row: 0,
       kind: 'k8s',
@@ -149,6 +155,7 @@ window.ARCH_MODEL = {
     {
       id: 'root-page',
       view: 'request',
+      inCluster: true,
       col: 4,
       row: -1,
       kind: 'k8s',
@@ -161,6 +168,7 @@ window.ARCH_MODEL = {
     {
       id: 'backend',
       view: 'request',
+      inCluster: true,
       col: 4,
       row: 1,
       kind: 'k8s',
@@ -181,6 +189,7 @@ window.ARCH_MODEL = {
     {
       id: 'replicas',
       view: 'request',
+      inCluster: true,
       col: 4,
       row: 2,
       kind: 'k8s',
@@ -196,6 +205,7 @@ window.ARCH_MODEL = {
     {
       id: 'hpa',
       view: 'request',
+      inCluster: true,
       col: 4,
       row: 3,
       kind: 'k8s',
@@ -211,6 +221,7 @@ window.ARCH_MODEL = {
     {
       id: 'ep-health',
       view: 'request',
+      inCluster: true,
       col: 5,
       row: -1,
       kind: 'api',
@@ -224,6 +235,7 @@ window.ARCH_MODEL = {
     {
       id: 'ep-list',
       view: 'request',
+      inCluster: true,
       col: 5,
       row: 0,
       kind: 'api',
@@ -242,6 +254,7 @@ window.ARCH_MODEL = {
     {
       id: 'ep-reserve',
       view: 'request',
+      inCluster: true,
       col: 5,
       row: 1,
       kind: 'api',
@@ -262,6 +275,7 @@ window.ARCH_MODEL = {
     {
       id: 'ep-purchase',
       view: 'request',
+      inCluster: true,
       col: 5,
       row: 2,
       kind: 'api',
@@ -272,15 +286,16 @@ window.ARCH_MODEL = {
       summary: 'Turns a reserved ticket into a sold one. The UNIQUE constraint on purchases.ticket_id makes a double sale impossible.',
       details: [
         'Takes the ticket number and the reservation token; only an active reservation with the matching token can be bought.',
-        'One statement marks the ticket sold and inserts the purchase, so both happen or neither does (ADR 0010).',
+        'One statement marks the ticket sold and inserts the purchase, so both happen or neither does (ADR 0011).',
         '201 with the purchase, 409 for an unknown, expired, sold or wrong-token reservation, without saying which.',
       ],
       files: ['backend/src/modules/purchases/route.ts', 'backend/src/modules/purchases/repository.ts', 'backend/test/unit/purchases.test.ts', 'backend/test/integration/purchaseConcurrency.test.ts'],
-      adrs: ['0002-row-per-ticket-with-skip-locked', '0009-reservation-token-instead-of-login', '0010-sold-status-written-with-the-purchase'],
+      adrs: ['0002-row-per-ticket-with-skip-locked', '0009-reservation-token-instead-of-login', '0011-sold-status-written-with-the-purchase'],
     },
     {
       id: 'idempotency',
       view: 'request',
+      inCluster: true,
       col: 5,
       row: 3,
       kind: 'api',
@@ -293,6 +308,7 @@ window.ARCH_MODEL = {
     {
       id: 'rate-limit',
       view: 'request',
+      inCluster: true,
       col: 5,
       row: 4,
       kind: 'api',
@@ -305,6 +321,7 @@ window.ARCH_MODEL = {
     {
       id: 'postgres',
       view: 'request',
+      inCluster: true,
       col: 6,
       row: 1,
       kind: 'data',
@@ -326,6 +343,7 @@ window.ARCH_MODEL = {
     {
       id: 'sweeper',
       view: 'request',
+      inCluster: true,
       col: 6,
       row: 2,
       kind: 'data',
@@ -338,6 +356,7 @@ window.ARCH_MODEL = {
     {
       id: 'redis',
       view: 'request',
+      inCluster: true,
       col: 6,
       row: 4,
       kind: 'data',
@@ -350,6 +369,7 @@ window.ARCH_MODEL = {
     {
       id: 'tickets-table',
       view: 'request',
+      inCluster: true,
       col: 7,
       row: 0,
       kind: 'data',
@@ -375,6 +395,7 @@ window.ARCH_MODEL = {
     {
       id: 'purchases-table',
       view: 'request',
+      inCluster: true,
       col: 7,
       row: 2,
       kind: 'data',
@@ -385,11 +406,12 @@ window.ARCH_MODEL = {
       summary: 'One row per purchase. UNIQUE on ticket_id lets the database refuse a second sale of the same ticket.',
       details: ['purchased_at defaults to now(). The idempotency key arrives with #29.'],
       files: ['backend/db/migrations/20261029095419_create_purchases.sql'],
-      adrs: ['0002-row-per-ticket-with-skip-locked', '0010-sold-status-written-with-the-purchase'],
+      adrs: ['0002-row-per-ticket-with-skip-locked', '0011-sold-status-written-with-the-purchase'],
     },
     {
       id: 'queue-worker',
       view: 'request',
+      inCluster: true,
       col: 7,
       row: 4,
       kind: 'k8s',
@@ -414,6 +436,9 @@ window.ARCH_MODEL = {
       issues: [],
       statusOverride: { status: 'done', reason: 'In use since the first PR; not tracked as an issue.' },
       summary: 'One issue, one branch, one PR. The other person reviews; the PR says Closes #n.',
+      details: [
+        'CI runs twice: on the PR, where build makes the images without pushing them and deploy is skipped, and again on main after the merge, where build pushes and deploy runs.',
+      ],
       files: ['.github/pull_request_template.md'],
     },
     {
@@ -426,7 +451,11 @@ window.ARCH_MODEL = {
       sub: 'main needs green CI',
       milestone: 'G',
       issues: [21],
-      summary: 'Requires a passing CI run and a review before a PR can merge. Only the repo owner (Jennifer) can turn it on.',
+      summary: 'No direct pushes to main: a PR merges only with one approving review and green lint, test and build checks.',
+      details: [
+        'e2e is required too, indirectly: build waits for it.',
+        'A new commit dismisses earlier approvals, the branch must be up to date with main, and nobody can bypass the rules, admins included.',
+      ],
     },
     {
       id: 'lint',
@@ -451,7 +480,7 @@ window.ARCH_MODEL = {
       sub: 'typecheck + unit tests',
       milestone: 'G',
       issues: [6, 14],
-      summary: 'Typechecks the backend and runs the unit tests in backend/test/unit, which need no database. #14 adds unit tests of the service logic.',
+      summary: 'Typechecks the backend and runs the unit tests in backend/test/unit, which need no database, then the integration tests. Also typechecks and tests the frontend.',
       files: ['.github/workflows/ci.yml', 'backend/test/unit/parseTicketNumbers.test.ts'],
     },
     {
@@ -467,6 +496,7 @@ window.ARCH_MODEL = {
       summary:
         'bun run test:integration starts a throwaway Postgres with Testcontainers, runs the migrations and tests the API against it, locally and in Actions. One test fires 200 parallel reservations at 20 tickets and checks that exactly 20 succeed with no duplicates.',
       details: [
+        'Runs inside the test job, after the unit tests, not as a job of its own.',
         'One container for the whole run, preloaded by test/integration/setup.ts. Each test empties the tickets table and inserts only the tickets it needs.',
         'The tests refuse to run without the preload, so they can never empty the dev database from compose.yaml.',
       ],
@@ -513,7 +543,7 @@ window.ARCH_MODEL = {
       kind: 'ci',
       label: 'Manifest check',
       sub: 'validate k8s/',
-      milestone: 'G',
+      milestone: 'Extras',
       issues: [43],
       summary: 'Validates the Kubernetes manifests in CI, so a broken manifest fails the PR instead of the deploy.',
     },
@@ -527,7 +557,7 @@ window.ARCH_MODEL = {
       sub: 'backend + frontend',
       milestone: 'G',
       issues: [6],
-      summary: 'Builds both images in a matrix after lint and test pass, with one build cache per image.',
+      summary: 'Builds both images in a matrix after lint, test and e2e pass, with one build cache per image.',
       details: ['On a PR the images are built but not pushed.'],
       files: ['.github/workflows/ci.yml'],
     },
@@ -567,6 +597,7 @@ window.ARCH_MODEL = {
     {
       id: 'deploy-db',
       view: 'deploy',
+      inCluster: true,
       col: 5,
       row: 1,
       kind: 'k8s',
@@ -581,6 +612,7 @@ window.ARCH_MODEL = {
     {
       id: 'migrate-job',
       view: 'deploy',
+      inCluster: true,
       col: 6,
       row: 1,
       kind: 'k8s',
@@ -601,6 +633,7 @@ window.ARCH_MODEL = {
     {
       id: 'rollout',
       view: 'deploy',
+      inCluster: true,
       col: 7,
       row: 1,
       kind: 'k8s',
@@ -615,6 +648,7 @@ window.ARCH_MODEL = {
     {
       id: 'zero-downtime',
       view: 'deploy',
+      inCluster: true,
       col: 7,
       row: 2,
       kind: 'k8s',
@@ -653,7 +687,8 @@ window.ARCH_MODEL = {
     {
       id: 'pod-security',
       view: 'deploy',
-      col: 3,
+      inCluster: true,
+      col: 6,
       row: 3,
       kind: 'k8s',
       label: 'Pod Security',
@@ -708,7 +743,7 @@ window.ARCH_MODEL = {
       label: 'Normal + spike runs',
       sub: '50,000 booking attempts',
       milestone: 'Extras',
-      issues: [30],
+      issues: [30, 86],
       summary:
         'Documented runs with a reset script: 50,000 booking attempts over 15 min (normal) and over 6 min with peaks (spike). Check: at most 5,000 sold, 0 duplicates.',
     },
@@ -727,20 +762,25 @@ window.ARCH_MODEL = {
     {
       id: 'cluster',
       view: 'ops',
+      inCluster: true,
       col: 1,
       row: 1,
       kind: 'k8s',
-      label: 'Cluster',
-      sub: 'backend + Postgres',
+      label: 'tickets namespace',
+      sub: 'backend, frontend, Postgres',
       milestone: 'G',
       issues: [4, 5, 8],
-      summary: 'The running system: the backend pods and Postgres in the tickets namespace on k3s.',
-      details: ['Run kubectl top nodes on 10-30: above about 80 % RAM, upgrade the VPS.'],
+      summary: 'The running system: the backend, the frontend and Postgres in the tickets namespace on k3s.',
+      details: [
+        'On 2026-10-29, with the monitoring stack running and the app idle, the node used 3,540 Mi (44 %) of its 8 GB, well under the 80 % at which we would upgrade the VPS. Measured again under load in #25.',
+      ],
+      files: ['docs/runbooks/monitoring.md'],
       adrs: ['0004-separate-contabo-vps'],
     },
     {
       id: 'hpa-ops',
       view: 'ops',
+      inCluster: true,
       col: 2,
       row: 2,
       kind: 'k8s',
@@ -753,11 +793,12 @@ window.ARCH_MODEL = {
     {
       id: 'prometheus',
       view: 'ops',
+      inCluster: true,
       col: 2,
       row: 0,
       kind: 'ops',
       label: 'Prometheus',
-      sub: '2–3 days retention',
+      sub: '3 days retention',
       milestone: 'G',
       issues: [18],
       summary:
@@ -774,6 +815,7 @@ window.ARCH_MODEL = {
     {
       id: 'loki',
       view: 'ops',
+      inCluster: true,
       col: 2,
       row: 1,
       kind: 'ops',
@@ -793,6 +835,7 @@ window.ARCH_MODEL = {
     {
       id: 'backend-metrics',
       view: 'ops',
+      inCluster: true,
       col: 1,
       row: 0,
       kind: 'ops',
@@ -806,6 +849,7 @@ window.ARCH_MODEL = {
     {
       id: 'grafana',
       view: 'ops',
+      inCluster: true,
       col: 3,
       row: 0,
       kind: 'ops',
@@ -813,7 +857,7 @@ window.ARCH_MODEL = {
       sub: 'grafana.<domain>',
       milestone: 'G',
       issues: [18],
-      summary: 'One dashboard with metrics and logs, shown in the defence and linked from the README.',
+      summary: 'One dashboard, Tickets, with metrics and logs, shown in the defence.',
       details: [
         'Panels: requests per second, response times (p50, p95, p99), responses by status code and the 5xx rate from Traefik; backend pods and HPA replicas from kube-state-metrics; CPU and memory per pod from cAdvisor; logs from Loki.',
         'In an autoscaling run the sources show cause, reaction and effect: CPU per pod rises, the HPA raises its desired replicas, and response times fall again.',
@@ -825,6 +869,7 @@ window.ARCH_MODEL = {
     {
       id: 'backup-cronjob',
       view: 'ops',
+      inCluster: true,
       col: 2,
       row: 3,
       kind: 'k8s',
@@ -844,7 +889,7 @@ window.ARCH_MODEL = {
     {
       id: 'b2',
       view: 'ops',
-      col: 3,
+      col: 4,
       row: 3,
       kind: 'data',
       label: 'Backblaze B2',
@@ -862,7 +907,7 @@ window.ARCH_MODEL = {
     {
       id: 'restore',
       view: 'ops',
-      col: 4,
+      col: 5,
       row: 3,
       kind: 'ops',
       label: 'Tested restore',
@@ -882,9 +927,9 @@ window.ARCH_MODEL = {
 
   edges: [
     { from: 'browser', to: 'dns', label: 'lookup' },
-    { from: 'dns', to: 'vps', label: 'HTTPS :443' },
+    { from: 'dns', to: 'vps', label: 'same IP' },
     { from: 'vps', to: 'traefik', label: '80 / 443' },
-    { from: 'vps', to: 'waiting-room', future: true },
+    { from: 'traefik', to: 'waiting-room', future: true },
     { from: 'traefik', to: 'frontend', label: 'cdn.' },
     { from: 'traefik', to: 'root-page', label: '<domain>' },
     { from: 'traefik', to: 'backend', label: 'api.' },
@@ -895,7 +940,7 @@ window.ARCH_MODEL = {
     { from: 'backend', to: 'ep-reserve' },
     { from: 'backend', to: 'ep-purchase' },
     { from: 'ep-purchase', to: 'idempotency' },
-    { from: 'idempotency', to: 'rate-limit' },
+    { from: 'backend', to: 'rate-limit' },
     { from: 'ep-list', to: 'postgres', label: 'SQL' },
     { from: 'ep-reserve', to: 'postgres', label: 'SQL' },
     { from: 'ep-purchase', to: 'postgres', label: 'SQL' },
@@ -917,7 +962,7 @@ window.ARCH_MODEL = {
     { from: 'e2e-tests', to: 'build' },
     { from: 'build', to: 'ghcr', label: 'push on main' },
     { from: 'ghcr', to: 'deploy-job' },
-    { from: 'deploy-job', to: 'deploy-db', label: 'SSH, deploy.sh' },
+    { from: 'deploy-job', to: 'deploy-db', label: 'SSH' },
     { from: 'deploy-db', to: 'migrate-job' },
     { from: 'migrate-job', to: 'rollout', label: 'only if Complete' },
     { from: 'rollout', to: 'zero-downtime' },

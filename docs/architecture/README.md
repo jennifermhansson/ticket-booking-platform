@@ -16,4 +16,4 @@ Click a node for what it does, how it works, its issues, files and ADRs. The URL
 
 ## Add a node
 
-Add an object to `nodes` in `model.js` with an `id`, the `view` it belongs to, a `col` and `row` on that view's grid, a `kind` (`client`, `network`, `k8s`, `api`, `data`, `ci` or `ops`), a `milestone`, the `issues` that build it and a one-sentence `summary`. `details`, `files` and `adrs` are optional. Then connect it with an entry in `edges`. Describe what the files actually do, not what the plan said they would.
+Add an object to `nodes` in `model.js` with an `id`, the `view` it belongs to, a `col` and `row` on that view's grid, a `kind` (`client`, `network`, `k8s`, `api`, `data`, `ci` or `ops`), a `milestone`, the `issues` that build it and a one-sentence `summary`. `details`, `files` and `adrs` are optional. Set `inCluster: true` on a node that runs in the k3s cluster: the map draws the cluster box around those nodes, so keep every other node out of the columns and rows they span. Then connect it with an entry in `edges`. Describe what the files actually do, not what the plan said they would.
