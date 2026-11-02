@@ -15,4 +15,5 @@ The VG criteria ask for deploys with no downtime, shown under load (#23). A roll
 - Fastify answers 503 to a request that arrives after `close()` has started (`return503OnClosing`). The `preStop` sleep is what keeps Traefik from sending one; a shorter sleep would show up as 503s in k6 and on the Traefik panel.
 - Migrations must work with the old and the new version at once ([ADR 0007](0007-migrations-with-dbmate-as-a-job.md)), since both run during a rollout.
 - Raising the sleep means raising `terminationGracePeriodSeconds` with it: the grace period counts from the start of `preStop`.
+- `sql.close({ timeout: 5 })` waits at most 5 s for running queries, then rejects them, so a hung query ends the shutdown at about 15 s instead of a SIGKILL at 30 s. After the HTTP drain no queries should be running, so the timeout only matters when something hangs.
 - **In the defence:** asked "what happens to a request that is running when the pod is replaced?", the answer is the shutdown order above: the pod is out of Traefik's rotation before SIGTERM, and `app.close()` lets the request finish before the process exits.

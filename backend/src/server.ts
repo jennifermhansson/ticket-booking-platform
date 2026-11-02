@@ -15,7 +15,9 @@ async function shutDown(signal: NodeJS.Signals) {
   app.log.info({ signal }, 'shutting down')
   try {
     await app.close()
-    await sql.close()
+    // Bounded, so a hung query cannot hold the pod until SIGKILL: the 10 s
+    // preStop sleep plus 5 s fits in the 30 s grace period.
+    await sql.close({ timeout: 5 })
     process.exit(0)
   } catch (err) {
     app.log.error(err, 'shutdown failed')
