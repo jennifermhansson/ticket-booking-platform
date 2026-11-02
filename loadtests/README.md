@@ -17,6 +17,8 @@ docker run --rm -e PROFILE=low -v "$PWD/loadtests:/scripts:ro" grafana/k6:2.2.0 
 | `PROFILE` | `low` | `smoke`: 1 booking attempt/s for 30 s, to check that the script works. `low`: 2 booking attempts/s for 5 minutes, about 600 tickets sold. |
 | `BASE_URL` | `https://api.tickets.philipzachariasson.dev` | The API to test. |
 
+For type checking and autocomplete in the editor, run `bun install` in `loadtests/`, and `bun run typecheck` checks the script. The k6 types (`@types/k6`) are only for the editor: k6 in the container uses its own built-in modules and never reads `package.json` or `node_modules`. Keep the `@types/k6` version equal to the image tag, so that the editor does not offer APIs the image lacks; bump both together.
+
 The run fails if more than 1% of requests fail, if p95 response time is over 500 ms, or if any purchase of a fresh reservation is refused (`purchase_conflicts`). A 409 on `POST /reservations` means sold out and counts as an expected answer, not a failure.
 
 ## After a run
