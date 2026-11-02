@@ -44,6 +44,9 @@ rules:
   - apiGroups: ["networking.k8s.io"]
     resources: ["ingresses"]
     verbs: ["get", "list", "watch", "create", "update", "patch"]
+  - apiGroups: ["autoscaling"]
+    resources: ["horizontalpodautoscalers"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
   # Read-only, for `kubectl rollout status` and for debugging a failed deploy.
   - apiGroups: ["apps"]
     resources: ["replicasets"]

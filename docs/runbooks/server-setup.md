@@ -212,7 +212,7 @@ CI deploys over SSH as the Linux user `deploy`, which runs `kubectl` with a Serv
 
 **Kubernetes side.** [`k8s/cluster/deploy-rbac.yaml`](../../k8s/cluster/deploy-rbac.yaml) holds the `deploy` ServiceAccount, a Role, its RoleBinding and the Secret `deploy-token`:
 
-- The Role allows get, list, watch, create, update and patch on Deployments, StatefulSets, Services and Ingresses, get, list, watch and create on Jobs (the migration Job gets a new name on every deploy, so it is never updated), and read-only access to ReplicaSets, Pods, pod logs and Events, which `kubectl rollout status` and debugging need. It allows no delete, no Secrets and nothing outside `tickets`. When a manifest in `k8s/` gets a new kind (a HorizontalPodAutoscaler, a CronJob), add it to the Role first, or CI's apply is refused.
+- The Role allows get, list, watch, create, update and patch on Deployments, StatefulSets, CronJobs, Services, Ingresses and HorizontalPodAutoscalers, get, list, watch and create on Jobs (the migration Job gets a new name on every deploy, so it is never updated), and read-only access to ReplicaSets, Pods, pod logs and Events, which `kubectl rollout status` and debugging need. It allows no delete, no Secrets and nothing outside `tickets`. When a manifest in `k8s/` gets a new kind (a ConfigMap, a PodDisruptionBudget), add it to the Role first, or CI's apply is refused.
 - `deploy-token` is a `kubernetes.io/service-account-token` Secret, so the token does not expire. Since Kubernetes 1.24 a ServiceAccount gets no lasting token by itself, and `kubectl create token` expires within hours.
 - Check what it may do: `kubectl auth can-i --list -n tickets --as=system:serviceaccount:tickets:deploy`.
 

@@ -7,7 +7,8 @@ metadata:
   labels:
     app: backend
 spec:
-  replicas: 2
+  # No replicas: the HorizontalPodAutoscaler below owns the count, and a value
+  # here would reset it on every apply in deploy.sh.
   selector:
     matchLabels:
       app: backend
@@ -54,6 +55,31 @@ spec:
               memory: 256Mi
           securityContext:
             allowPrivilegeEscalation: false
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: backend
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: backend
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+    # Percent of requests.cpu (100m), so 50m per pod. Low because the backend
+    # mostly waits on Postgres and spends little CPU per request.
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50
+  behavior:
+    # The default is 300s; 60s lets the scale-down show within a demo.
+    scaleDown:
+      stabilizationWindowSeconds: 60
 ---
 apiVersion: v1
 kind: Service
