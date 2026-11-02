@@ -10,7 +10,7 @@ window.ARCH_MODEL = {
   // Extras polish of a part that is already on the map (78, 80, 81), so an
   // open extra does not keep a finished node "In progress".
   // Any other issue that no node lists shows up under "Not on the map".
-  unmappedOnPurpose: [2, 20, 26, 27, 36, 44, 46, 48, 57, 63, 64, 78, 80, 81, 83],
+  unmappedOnPurpose: [2, 20, 26, 27, 36, 44, 46, 48, 57, 63, 64, 78, 80, 81, 83, 88],
 
   views: [
     {
