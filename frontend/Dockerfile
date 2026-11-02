@@ -1,4 +1,4 @@
-ARG BUN_VERSION=1.3.6
+ARG BUN_VERSION=1.4.4
 
 # Vite builds the React app into dist/. VITE_API_URL comes from
 # .env.production, so the API address is baked into the bundle.
