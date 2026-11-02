@@ -59,12 +59,15 @@ window.ARCH_MODEL = {
       row: 1,
       kind: 'network',
       label: 'DNS',
-      sub: 'api · cdn · grafana',
+      sub: '*.tickets → VPS',
       milestone: 'G',
       issues: [3],
       summary:
-        'api, cdn and grafana under tickets.philipzachariasson.dev point at the VPS. The root domain stays free for other use.',
-      details: ['<domain> in the docs means tickets.philipzachariasson.dev.'],
+        'Two A records, tickets and the wildcard *.tickets, point every name under tickets.philipzachariasson.dev at the VPS. api., cdn. and grafana. all get the same IP: DNS does not pick the service, Traefik does, by host name.',
+      details: [
+        'A new host name needs no DNS change, because the wildcard already covers it.',
+        '<domain> in the docs means tickets.philipzachariasson.dev. The root domain stays free for other use.',
+      ],
       files: ['docs/runbooks/server-setup.md'],
     },
     {
@@ -882,7 +885,7 @@ window.ARCH_MODEL = {
 
   edges: [
     { from: 'browser', to: 'dns', label: 'lookup' },
-    { from: 'dns', to: 'vps', label: 'HTTPS :443' },
+    { from: 'dns', to: 'vps', label: 'same IP' },
     { from: 'vps', to: 'traefik', label: '80 / 443' },
     { from: 'vps', to: 'waiting-room', future: true },
     { from: 'traefik', to: 'frontend', label: 'cdn.' },
