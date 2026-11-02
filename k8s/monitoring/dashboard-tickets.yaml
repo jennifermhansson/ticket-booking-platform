@@ -133,7 +133,7 @@ data:
           "id": 5,
           "type": "timeseries",
           "title": "Backend pods",
-          "description": "Ready backend pods, and what the autoscaler (#24) wants once it exists.",
+          "description": "Ready backend pods, and what the autoscaler (#24) wants.",
           "gridPos": { "x": 4, "y": 8, "w": 4, "h": 8 },
           "datasource": { "type": "prometheus", "uid": "prometheus" },
           "fieldConfig": { "defaults": { "unit": "none", "decimals": 0, "min": 0 }, "overrides": [] },

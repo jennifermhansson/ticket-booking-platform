@@ -180,8 +180,8 @@ window.ARCH_MODEL = {
         'Bun + Fastify behind the backend Service. Layers: route → controller → service → repository → db.',
       details: [
         'Readiness probe on /health every 5 s; liveness every 10 s.',
-        'Requests 100m CPU and 128 Mi, limit 256 Mi. The requests are what the HPA will measure against.',
-        'replicas: 2.',
+        'Requests 100m CPU and 128 Mi, limit 256 Mi. The requests are what the HPA measures against.',
+        'No replicas in the manifest: the HPA sets the count (2–5).',
         'CORS lets only the origins in CORS_ORIGINS call it from a browser: https://cdn.<domain> in the cluster (#13).',
       ],
       files: ['k8s/backend.yaml', 'backend/Dockerfile', 'backend/src/app.ts', 'backend/src/server.ts', 'backend/src/cors.ts'],
@@ -210,12 +210,17 @@ window.ARCH_MODEL = {
       row: 3,
       kind: 'k8s',
       label: 'HPA',
-      sub: 'autoscaling 2 → 4–5',
+      sub: 'autoscaling 2 → 5',
       milestone: 'VG',
       issues: [24],
       summary:
         'The Horizontal Pod Autoscaler adds backend pods under load and removes them after, based on CPU against resources.requests.',
-      details: ['Scales pods, not nodes: one node is enough (ADR 0001).'],
+      details: [
+        'Target: 50% of requests.cpu, so 50m per pod. Low because the backend mostly waits on Postgres.',
+        'Scales down after 60 s below target instead of the default 300 s, so the demo shows it.',
+        'Scales pods, not nodes: one node is enough (ADR 0001).',
+      ],
+      files: ['k8s/backend.yaml'],
       adrs: ['0001-k3s-from-day-one'],
     },
     {
@@ -788,7 +793,7 @@ window.ARCH_MODEL = {
       sub: 'reacts to CPU',
       milestone: 'VG',
       issues: [24],
-      summary: 'Scales the backend between 2 and 4–5 pods. Shown under load with k6 and Grafana.',
+      summary: 'Scales the backend between 2 and 5 pods. Shown under load with k6 and Grafana.',
     },
     {
       id: 'prometheus',
