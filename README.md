@@ -43,3 +43,7 @@ bun run test:e2e
 
 - `bun run test:e2e` starts and migrates its own Postgres with Testcontainers, like the integration tests, so it never touches the database from `docker compose up`. `playwright.config.ts` then starts the backend and builds and serves the frontend, so ports 3000 and 4173 have to be free.
 - They need Bun 1.4 or later: `test:e2e` runs Playwright under Bun and `frontend/e2e/db.ts` uses Bun's SQL client. Run `bun upgrade` if `bun --version` says 1.3.
+
+## Run a load test
+
+k6 runs from Docker against the deployed system, and every run sells tickets in its database. How to run it, check the result and reset the tickets: [loadtests/README.md](loadtests/README.md).

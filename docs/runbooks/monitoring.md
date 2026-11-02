@@ -77,7 +77,9 @@ Measured on 2026-10-29 with the whole stack running and the app idle: `kubectl t
 | Alloy | about 60 Mi |
 | Operator, kube-state-metrics and node-exporter (since turned off) | about 50 Mi together |
 
-That is about 950 Mi, well under the 80 % at which [the plan](../plan.md#ram-on-8-gb) says to upgrade the VPS. Measure again under load (#19, #25).
+That is about 950 Mi, well under the 80 % at which [the plan](../plan.md#ram-on-8-gb) says to upgrade the VPS. Measure again under load (#25).
+
+On 2026-11-02, during the `low` k6 profile (2 booking attempts/s, [loadtests/](../../loadtests/README.md)), the node used 3,358 Mi (42 %) and 740m CPU (18 %); the backend pod used 46 Mi and Postgres 51 Mi, no more than at idle. That load is enough to fill the dashboard's panels, not to move the node.
 
 ## Known problems
 
