@@ -41,4 +41,5 @@ bunx playwright install chromium
 bun run test:e2e
 ```
 
+- They need Bun 1.4 or later, since `test:e2e` runs Playwright under Bun, and the helper in `frontend/e2e/db.ts` uses Bun's SQL client. Run `bun upgrade` if `bun --version` says 1.3.
 - `playwright.config.ts` starts the backend and builds and serves the frontend itself, so only the database has to be running. Set `DATABASE_URL` to use another one than `compose.yaml`.

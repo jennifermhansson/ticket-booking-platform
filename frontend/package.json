@@ -8,7 +8,7 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "bun test src",
-    "test:e2e": "playwright test"
+    "test:e2e": "bun --bun x playwright test"
   },
   "dependencies": {
     "react": "^19.1.10",
@@ -17,11 +17,9 @@
   "devDependencies": {
     "@playwright/test": "^1.64.1",
     "@types/bun": "^1.4.3",
-    "@types/pg": "^8.23.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
-    "pg": "^8.23.1",
     "typescript": "^7.0.2",
     "vite": "^8.3.4"
   }
