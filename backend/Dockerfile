@@ -1,4 +1,4 @@
-ARG BUN_VERSION=1.3.6
+ARG BUN_VERSION=1.4.4
 # Keep in step with the dbmate devDependency in package.json.
 ARG DBMATE_VERSION=2.37.0
 

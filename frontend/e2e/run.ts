@@ -25,7 +25,7 @@ try {
   await $`bun run migrate`.cwd('../backend').env(env).quiet()
 
   const playwright = Bun.spawn(
-    ['bunx', 'playwright', 'test', ...Bun.argv.slice(2)],
+    ['bun', '--bun', 'x', 'playwright', 'test', ...Bun.argv.slice(2)],
     { env, stdio: ['inherit', 'inherit', 'inherit'] },
   )
   exitCode = await playwright.exited
