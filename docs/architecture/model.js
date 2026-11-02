@@ -173,7 +173,7 @@ window.ARCH_MODEL = {
       details: [
         'Readiness probe on /health every 5 s; liveness every 10 s.',
         'Requests 100m CPU and 128 Mi, limit 256 Mi. The requests are what the HPA will measure against.',
-        'replicas: 1 today. VG needs 2+.',
+        'replicas: 2.',
         'CORS lets only the origins in CORS_ORIGINS call it from a browser: https://cdn.<domain> in the cluster (#13).',
       ],
       files: ['k8s/backend.yaml', 'backend/Dockerfile', 'backend/src/app.ts', 'backend/src/server.ts', 'backend/src/cors.ts'],
@@ -189,7 +189,7 @@ window.ARCH_MODEL = {
       milestone: 'VG',
       issues: [22],
       summary:
-        'At least two backend pods behind the Service and Traefik. The concurrency test must show that locking holds across instances.',
+        'At least two backend pods behind the Service and Traefik. The concurrency tests run one process against Postgres; a k6 run against the pods followed by loadtests/check.sql shows that locking holds across instances.',
       details: ['Locking lives in Postgres, not in the pods, so more replicas do not change correctness (ADR 0002).'],
       adrs: ['0002-row-per-ticket-with-skip-locked', '0005-single-node-no-node-level-ha'],
     },

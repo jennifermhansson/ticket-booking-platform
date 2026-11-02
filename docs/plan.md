@@ -74,7 +74,7 @@ A phase starts only when the one before it is done (see [ADR 0003](adr/0003-prio
 
 ## Phase 2: VG criteria (10-31 → 11-01)
 
-- `replicas: 2+` behind the Service and Traefik. The concurrency test shows that the locking holds across instances.
+- `replicas: 2+` behind the Service and Traefik. A k6 run against the pods followed by `loadtests/check.sql` shows that the locking holds across instances.
 - **Zero downtime:** readiness probe, graceful SIGTERM handling in Fastify, a `preStop` sleep and `maxUnavailable: 0`.
 - **HPA:** set `resources.requests` and let the HPA scale between 2 and 4–5 pods.
 - Run the k6 script at high load from a laptop. Show 0 failed requests during a rollout, and pods scaling up and back down.
