@@ -54,37 +54,19 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16.15-alpine
-        env:
-          POSTGRES_HOST_AUTH_METHOD: trust
-          POSTGRES_DB: tickets
-        ports:
-          - 5433:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -d tickets"
-          --health-interval 2s
-          --health-timeout 3s
-          --health-retries 15
-    env:
-      DATABASE_URL: postgres://postgres@localhost:5433/tickets?sslmode=disable
     steps:
       - uses: actions/checkout@v4.2.2
       - uses: oven-sh/setup-bun@v2.0.2
         with:
           bun-version: ${{ env.BUN_VERSION }}
-      # The tests seed the tickets they need themselves.
-      - name: Migrate the database
+      - run: bun install --frozen-lockfile
         working-directory: backend
-        run: |
-          bun install --frozen-lockfile
-          bun run migrate
       - run: bun install --frozen-lockfile
         working-directory: frontend
       - run: bunx playwright install --with-deps chromium
         working-directory: frontend
-      # playwright.config.ts starts the backend and the built frontend itself.
+      # Starts its own Postgres with Testcontainers on the runner's Docker (ADR 0010),
+      # and playwright.config.ts starts the backend and the built frontend.
       - run: bun run test:e2e
         working-directory: frontend
       - uses: actions/upload-artifact@v4.6.2

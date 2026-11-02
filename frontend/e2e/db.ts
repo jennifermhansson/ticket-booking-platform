@@ -1,17 +1,15 @@
 import { SQL } from 'bun'
 
-const DATABASE_URL =
-  process.env.DATABASE_URL ?? 'postgres://postgres@localhost:5433/tickets'
-
-// TRUNCATE below would wipe any database it points at, so only a local one is
-// allowed. Production is never reachable from here, but the dev database is:
-// run `bun run import` in backend/ afterwards to get its 5000 tickets back.
-const { hostname } = new URL(DATABASE_URL)
-if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
-  throw new Error(`e2e tests empty the tickets table, refusing ${hostname}`)
+// run.ts sets both. Without it DATABASE_URL could point at any database, and
+// TRUNCATE below would wipe it.
+const databaseUrl = process.env.DATABASE_URL
+if (!databaseUrl || databaseUrl !== process.env.TEST_DATABASE_URL) {
+  throw new Error(
+    'e2e tests need their own database: run them with `bun run test:e2e`',
+  )
 }
 
-const sql = new SQL(DATABASE_URL)
+const sql = new SQL(databaseUrl)
 
 // Empties tickets and purchases and inserts `count` available tickets, so
 // every test knows exactly what it starts with.
