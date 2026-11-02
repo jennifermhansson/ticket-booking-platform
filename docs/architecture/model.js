@@ -662,6 +662,17 @@ window.ARCH_MODEL = {
       milestone: 'G',
       issues: [19],
       summary: 'A simple k6 script, so that Grafana has requests per second, response times, errors and logs to show.',
+      details: [
+        'Each iteration is one booking attempt: list, reserve, buy. The PROFILE variable picks the load, so the high-load and spike runs are new profiles in the same script.',
+        'Runs against the deployed system and its only database; check.sql proves no ticket was sold twice and reset.sh makes every ticket available again (ADR 0014).',
+      ],
+      files: [
+        'loadtests/bookingAttempt.ts',
+        'loadtests/check.sql',
+        'loadtests/reset.sh',
+        'loadtests/README.md',
+      ],
+      adrs: ['0014-load-tests-against-the-deployed-environment'],
     },
     {
       id: 'k6-high',

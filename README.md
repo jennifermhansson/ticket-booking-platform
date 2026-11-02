@@ -33,3 +33,7 @@ bun run test:integration
 - `bun run test` runs the unit tests in `backend/test/unit/`. They need no database.
 - `bun run test:integration` needs Docker running. It starts its own Postgres with Testcontainers, runs the migrations and tests the API against it, so it never touches the database from `docker compose up` ([ADR 0010](docs/adr/0010-integration-tests-with-testcontainers.md)).
 - Run them through these scripts, not a bare `bun test`: the integration tests refuse to run without the preload that starts their database.
+
+## Run a load test
+
+k6 runs from Docker against the deployed system, and every run sells tickets in its database. How to run it, check the result and reset the tickets: [loadtests/README.md](loadtests/README.md).
