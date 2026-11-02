@@ -25,6 +25,7 @@
     --kind-ci: #4f6b8a;
     --kind-ops: #b8860b;
     --focus: #2c7fb8;
+    --zone-bg: #eef8f5;
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
@@ -48,6 +49,7 @@
       --kind-ci: #93acc8;
       --kind-ops: #e2b54a;
       --focus: #6bb6ec;
+      --zone-bg: #1b2b27;
       color-scheme: dark;
     }
   }
@@ -90,6 +92,8 @@
   .canvas svg path { fill: none; stroke: var(--line-strong); stroke-width: 1.5; }
   .canvas svg path.future { stroke: var(--line); stroke-dasharray: 5 5; }
   .canvas svg text { font-size: 11px; fill: var(--muted); paint-order: stroke; stroke: var(--surface); stroke-width: 4px; }
+  .canvas svg rect.zone { fill: var(--zone-bg); stroke: var(--kind-k8s); stroke-width: 1.5; stroke-dasharray: 6 4; }
+  .canvas svg text.zone-label { font-size: 12px; font-weight: 600; fill: var(--kind-k8s); stroke: var(--zone-bg); }
 
   .node {
     position: absolute; width: 168px; height: 64px; padding: 8px 10px 8px 14px;
@@ -116,6 +120,7 @@
   .swatch.done { background: var(--done-bg); border-color: var(--done); }
   .swatch.in-progress { background: var(--progress-bg); border-color: var(--progress); }
   .swatch.planned { border-style: dashed; border-color: var(--planned); }
+  .swatch.zone { border-style: dashed; border-color: var(--kind-k8s); background: var(--zone-bg); }
   .kind-chip { width: 5px; height: 14px; border-radius: 2px; display: inline-block; }
 
   aside {
@@ -164,6 +169,10 @@
   const CELL_H = 92
   const NODE_W = 168
   const NODE_H = 64
+  const ZONE_PAD_X = 8
+  const ZONE_PAD_TOP = 28
+  const ZONE_PAD_BOTTOM = 12
+  const CLUSTER_LABEL = 'k3s cluster (on the VPS)'
   const KINDS = {
     client: 'Client',
     network: 'Network',
@@ -289,15 +298,31 @@
   function renderCanvas() {
     const nodes = visibleNodes()
     const minRow = Math.min(...nodes.map((n) => n.row))
-    const pos = new Map(nodes.map((n) => [n.id, { x: n.col * CELL_W, y: (n.row - minRow) * CELL_H }]))
-    const width = Math.max(...nodes.map((n) => n.col)) * CELL_W + NODE_W
-    const height = Math.max(...nodes.map((n) => n.row - minRow)) * CELL_H + NODE_H
+    const pos = new Map(
+      nodes.map((n) => [n.id, { x: ZONE_PAD_X + n.col * CELL_W, y: ZONE_PAD_TOP + (n.row - minRow) * CELL_H }]),
+    )
+    const width = Math.max(...nodes.map((n) => n.col)) * CELL_W + NODE_W + 2 * ZONE_PAD_X
+    const height = Math.max(...nodes.map((n) => n.row - minRow)) * CELL_H + NODE_H + ZONE_PAD_TOP + ZONE_PAD_BOTTOM
 
     const canvas = document.getElementById('canvas')
     canvas.style.width = `${width}px`
     canvas.style.height = `${height}px`
 
     const svg = svgEl('svg', { width, height, 'aria-hidden': 'true' })
+
+    // The cluster box is the bounding box of the inCluster nodes, so model.js
+    // must keep every other node out of the columns and rows it spans.
+    const inside = nodes.filter((n) => n.inCluster).map((n) => pos.get(n.id))
+    if (inside.length) {
+      const x = Math.min(...inside.map((p) => p.x)) - ZONE_PAD_X
+      const y = Math.min(...inside.map((p) => p.y)) - ZONE_PAD_TOP
+      const right = Math.max(...inside.map((p) => p.x)) + NODE_W + ZONE_PAD_X
+      const bottom = Math.max(...inside.map((p) => p.y)) + NODE_H + ZONE_PAD_BOTTOM
+      svg.append(svgEl('rect', { class: 'zone', x, y, width: right - x, height: bottom - y, rx: 14 }))
+      const label = svgEl('text', { class: 'zone-label', x: x + 12, y: y + 18 })
+      label.textContent = CLUSTER_LABEL
+      svg.append(label)
+    }
     const statuses = new Map(nodes.map((n) => [n.id, statusOf(n)]))
     for (const edge of model.edges) {
       const a = pos.get(edge.from)
@@ -359,6 +384,7 @@
         chip.style.background = `var(--kind-${key})`
         return el('span', {}, [chip, label])
       }),
+      el('span', {}, [el('i', { class: 'swatch zone' }), 'Inside the k3s cluster']),
       el('span', { text: 'Badge: G / VG / Extras milestone' }),
     )
   }

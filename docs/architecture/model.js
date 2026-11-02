@@ -94,7 +94,8 @@ window.ARCH_MODEL = {
     {
       id: 'waiting-room',
       view: 'request',
-      col: 2,
+      inCluster: true,
+      col: 3,
       row: 3,
       kind: 'k8s',
       label: 'Waiting room',
@@ -107,6 +108,7 @@ window.ARCH_MODEL = {
     {
       id: 'traefik',
       view: 'request',
+      inCluster: true,
       col: 3,
       row: 1,
       kind: 'k8s',
@@ -131,6 +133,7 @@ window.ARCH_MODEL = {
     {
       id: 'frontend',
       view: 'request',
+      inCluster: true,
       col: 4,
       row: 0,
       kind: 'k8s',
@@ -152,6 +155,7 @@ window.ARCH_MODEL = {
     {
       id: 'root-page',
       view: 'request',
+      inCluster: true,
       col: 4,
       row: -1,
       kind: 'k8s',
@@ -164,6 +168,7 @@ window.ARCH_MODEL = {
     {
       id: 'backend',
       view: 'request',
+      inCluster: true,
       col: 4,
       row: 1,
       kind: 'k8s',
@@ -184,6 +189,7 @@ window.ARCH_MODEL = {
     {
       id: 'replicas',
       view: 'request',
+      inCluster: true,
       col: 4,
       row: 2,
       kind: 'k8s',
@@ -199,6 +205,7 @@ window.ARCH_MODEL = {
     {
       id: 'hpa',
       view: 'request',
+      inCluster: true,
       col: 4,
       row: 3,
       kind: 'k8s',
@@ -214,6 +221,7 @@ window.ARCH_MODEL = {
     {
       id: 'ep-health',
       view: 'request',
+      inCluster: true,
       col: 5,
       row: -1,
       kind: 'api',
@@ -227,6 +235,7 @@ window.ARCH_MODEL = {
     {
       id: 'ep-list',
       view: 'request',
+      inCluster: true,
       col: 5,
       row: 0,
       kind: 'api',
@@ -245,6 +254,7 @@ window.ARCH_MODEL = {
     {
       id: 'ep-reserve',
       view: 'request',
+      inCluster: true,
       col: 5,
       row: 1,
       kind: 'api',
@@ -265,6 +275,7 @@ window.ARCH_MODEL = {
     {
       id: 'ep-purchase',
       view: 'request',
+      inCluster: true,
       col: 5,
       row: 2,
       kind: 'api',
@@ -284,6 +295,7 @@ window.ARCH_MODEL = {
     {
       id: 'idempotency',
       view: 'request',
+      inCluster: true,
       col: 5,
       row: 3,
       kind: 'api',
@@ -296,6 +308,7 @@ window.ARCH_MODEL = {
     {
       id: 'rate-limit',
       view: 'request',
+      inCluster: true,
       col: 5,
       row: 4,
       kind: 'api',
@@ -308,6 +321,7 @@ window.ARCH_MODEL = {
     {
       id: 'postgres',
       view: 'request',
+      inCluster: true,
       col: 6,
       row: 1,
       kind: 'data',
@@ -329,6 +343,7 @@ window.ARCH_MODEL = {
     {
       id: 'sweeper',
       view: 'request',
+      inCluster: true,
       col: 6,
       row: 2,
       kind: 'data',
@@ -341,6 +356,7 @@ window.ARCH_MODEL = {
     {
       id: 'redis',
       view: 'request',
+      inCluster: true,
       col: 6,
       row: 4,
       kind: 'data',
@@ -353,6 +369,7 @@ window.ARCH_MODEL = {
     {
       id: 'tickets-table',
       view: 'request',
+      inCluster: true,
       col: 7,
       row: 0,
       kind: 'data',
@@ -378,6 +395,7 @@ window.ARCH_MODEL = {
     {
       id: 'purchases-table',
       view: 'request',
+      inCluster: true,
       col: 7,
       row: 2,
       kind: 'data',
@@ -393,6 +411,7 @@ window.ARCH_MODEL = {
     {
       id: 'queue-worker',
       view: 'request',
+      inCluster: true,
       col: 7,
       row: 4,
       kind: 'k8s',
@@ -578,6 +597,7 @@ window.ARCH_MODEL = {
     {
       id: 'deploy-db',
       view: 'deploy',
+      inCluster: true,
       col: 5,
       row: 1,
       kind: 'k8s',
@@ -592,6 +612,7 @@ window.ARCH_MODEL = {
     {
       id: 'migrate-job',
       view: 'deploy',
+      inCluster: true,
       col: 6,
       row: 1,
       kind: 'k8s',
@@ -612,6 +633,7 @@ window.ARCH_MODEL = {
     {
       id: 'rollout',
       view: 'deploy',
+      inCluster: true,
       col: 7,
       row: 1,
       kind: 'k8s',
@@ -626,6 +648,7 @@ window.ARCH_MODEL = {
     {
       id: 'zero-downtime',
       view: 'deploy',
+      inCluster: true,
       col: 7,
       row: 2,
       kind: 'k8s',
@@ -664,7 +687,8 @@ window.ARCH_MODEL = {
     {
       id: 'pod-security',
       view: 'deploy',
-      col: 3,
+      inCluster: true,
+      col: 6,
       row: 3,
       kind: 'k8s',
       label: 'Pod Security',
@@ -738,11 +762,12 @@ window.ARCH_MODEL = {
     {
       id: 'cluster',
       view: 'ops',
+      inCluster: true,
       col: 1,
       row: 1,
       kind: 'k8s',
-      label: 'Cluster',
-      sub: 'tickets namespace',
+      label: 'tickets namespace',
+      sub: 'backend, frontend, Postgres',
       milestone: 'G',
       issues: [4, 5, 8],
       summary: 'The running system: the backend, the frontend and Postgres in the tickets namespace on k3s.',
@@ -755,6 +780,7 @@ window.ARCH_MODEL = {
     {
       id: 'hpa-ops',
       view: 'ops',
+      inCluster: true,
       col: 2,
       row: 2,
       kind: 'k8s',
@@ -767,6 +793,7 @@ window.ARCH_MODEL = {
     {
       id: 'prometheus',
       view: 'ops',
+      inCluster: true,
       col: 2,
       row: 0,
       kind: 'ops',
@@ -788,6 +815,7 @@ window.ARCH_MODEL = {
     {
       id: 'loki',
       view: 'ops',
+      inCluster: true,
       col: 2,
       row: 1,
       kind: 'ops',
@@ -807,6 +835,7 @@ window.ARCH_MODEL = {
     {
       id: 'backend-metrics',
       view: 'ops',
+      inCluster: true,
       col: 1,
       row: 0,
       kind: 'ops',
@@ -820,6 +849,7 @@ window.ARCH_MODEL = {
     {
       id: 'grafana',
       view: 'ops',
+      inCluster: true,
       col: 3,
       row: 0,
       kind: 'ops',
@@ -839,6 +869,7 @@ window.ARCH_MODEL = {
     {
       id: 'backup-cronjob',
       view: 'ops',
+      inCluster: true,
       col: 2,
       row: 3,
       kind: 'k8s',
@@ -858,7 +889,7 @@ window.ARCH_MODEL = {
     {
       id: 'b2',
       view: 'ops',
-      col: 3,
+      col: 4,
       row: 3,
       kind: 'data',
       label: 'Backblaze B2',
@@ -876,7 +907,7 @@ window.ARCH_MODEL = {
     {
       id: 'restore',
       view: 'ops',
-      col: 4,
+      col: 5,
       row: 3,
       kind: 'ops',
       label: 'Tested restore',
@@ -898,7 +929,7 @@ window.ARCH_MODEL = {
     { from: 'browser', to: 'dns', label: 'lookup' },
     { from: 'dns', to: 'vps', label: 'same IP' },
     { from: 'vps', to: 'traefik', label: '80 / 443' },
-    { from: 'vps', to: 'waiting-room', future: true },
+    { from: 'traefik', to: 'waiting-room', future: true },
     { from: 'traefik', to: 'frontend', label: 'cdn.' },
     { from: 'traefik', to: 'root-page', label: '<domain>' },
     { from: 'traefik', to: 'backend', label: 'api.' },
@@ -931,7 +962,7 @@ window.ARCH_MODEL = {
     { from: 'e2e-tests', to: 'build' },
     { from: 'build', to: 'ghcr', label: 'push on main' },
     { from: 'ghcr', to: 'deploy-job' },
-    { from: 'deploy-job', to: 'deploy-db', label: 'SSH, deploy.sh' },
+    { from: 'deploy-job', to: 'deploy-db', label: 'SSH' },
     { from: 'deploy-db', to: 'migrate-job' },
     { from: 'migrate-job', to: 'rollout', label: 'only if Complete' },
     { from: 'rollout', to: 'zero-downtime' },
