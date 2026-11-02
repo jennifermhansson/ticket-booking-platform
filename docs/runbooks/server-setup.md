@@ -51,6 +51,8 @@ The scan on 2026-10-22, after the Traefik NodePorts were removed, showed only `2
 
 On the server, `ss -tln` also lists `6443` (Kubernetes API) and `10250` (kubelet) on all interfaces: k3s binds them there, and ufw is what keeps them private. Both require authentication, but they are reachable while ufw is off, for example during the 5 minutes of a rollback timer. Ports 80 and 443 do not show up in `ss` at all, because ServiceLB's hostPorts are iptables rules rather than a listening process.
 
+The monitoring stack from #18 adds no listening port on the host: every part runs inside the pod network, and node-exporter, which would listen on `9100` with `hostNetwork`, is turned off. A scan of the monitoring ports on 2026-10-29 (`nmap -Pn -p 22,80,443,3000,3100,6443,7946,8080,9090,9093,9095,9100,10250,12345`) showed only `22`, `80` and `443` open. See [monitoring.md](monitoring.md).
+
 ### Changing rules that could lock us out
 
 Opening a new port can't lock anyone out, so it needs no precautions. A change to the SSH rule, the default policies or a rule deletion can, so use a rollback timer: a one-off systemd timer that turns the firewall off after 5 minutes unless it is cancelled.

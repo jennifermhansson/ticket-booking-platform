@@ -1,0 +1,74 @@
+---
+# Loki in monolithic (single-binary) mode with its chunks on a local volume
+# (ADR 0013). The chart moved from grafana/helm-charts to grafana-community;
+# since 20.0.0 it rejects unknown top-level values.
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: loki
+  namespace: kube-system
+spec:
+  repo: https://grafana-community.github.io/helm-charts
+  chart: loki
+  version: 20.0.2
+  targetNamespace: monitoring
+  valuesContent: |-
+    deploymentMode: Monolithic
+    loki:
+      auth_enabled: false
+      commonConfig:
+        replication_factor: 1
+      storage:
+        type: filesystem
+      schemaConfig:
+        configs:
+          - from: "2026-10-01"
+            store: tsdb
+            object_store: filesystem
+            schema: v13
+            index:
+              prefix: index_
+              period: 24h
+      limits_config:
+        retention_period: 72h
+      compactor:
+        retention_enabled: true
+        delete_request_store: filesystem
+
+    singleBinary:
+      replicas: 1
+      persistence:
+        size: 5Gi
+        storageClass: local-path
+      resources:
+        requests:
+          cpu: 50m
+          memory: 256Mi
+        limits:
+          memory: 768Mi
+    # The simple scalable targets default to replicas above zero.
+    read:
+      replicas: 0
+    write:
+      replicas: 0
+    backend:
+      replicas: 0
+
+    # The chart's default memcached caches reserve several GB of RAM.
+    chunksCache:
+      enabled: false
+    resultsCache:
+      enabled: false
+
+    # No alerting, so no sidecar loading rule ConfigMaps.
+    sidecar:
+      rules:
+        enabled: false
+
+    # Grafana and Alloy talk to the loki Service directly.
+    gateway:
+      enabled: false
+    lokiCanary:
+      enabled: false
+    test:
+      enabled: false

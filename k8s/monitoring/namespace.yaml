@@ -1,0 +1,7 @@
+---
+# Not labelled for the Pod Security restricted profile yet: Alloy's pod
+# sets no securityContext and would be refused (ADR 0013).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring

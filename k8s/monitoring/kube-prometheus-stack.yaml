@@ -1,0 +1,124 @@
+---
+# Prometheus, Grafana and kube-state-metrics (ADR 0013),
+# installed by k3s's Helm controller like cert-manager. Kept lean for the
+# 8 GB node: no Alertmanager, no alert or recording rules, short retention.
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: kube-prometheus-stack
+  namespace: kube-system
+spec:
+  repo: https://prometheus-community.github.io/helm-charts
+  chart: kube-prometheus-stack
+  version: 92.14.1
+  targetNamespace: monitoring
+  valuesContent: |-
+    alertmanager:
+      enabled: false
+    defaultRules:
+      create: false
+
+    # k3s runs these inside its own process, so their usual scrape targets
+    # do not exist and would only show as down. The API server's metrics
+    # are left out for their size.
+    kubeApiServer:
+      enabled: false
+    kubeControllerManager:
+      enabled: false
+    kubeScheduler:
+      enabled: false
+    kubeProxy:
+      enabled: false
+    kubeEtcd:
+      enabled: false
+
+    prometheus:
+      prometheusSpec:
+        retention: 3d
+        retentionSize: 2GB
+        scrapeInterval: 15s
+        # Pick up every ServiceMonitor and PodMonitor (Traefik's, later the
+        # backend's in #74), not only those labelled with this release.
+        serviceMonitorSelectorNilUsesHelmValues: false
+        podMonitorSelectorNilUsesHelmValues: false
+        ruleSelectorNilUsesHelmValues: false
+        probeSelectorNilUsesHelmValues: false
+        resources:
+          requests:
+            cpu: 100m
+            memory: 400Mi
+          limits:
+            memory: 1Gi
+        storageSpec:
+          volumeClaimTemplate:
+            spec:
+              storageClassName: local-path
+              accessModes: ["ReadWriteOnce"]
+              resources:
+                requests:
+                  storage: 5Gi
+
+    prometheusOperator:
+      resources:
+        requests:
+          cpu: 20m
+          memory: 64Mi
+        limits:
+          memory: 128Mi
+
+    kube-state-metrics:
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          memory: 128Mi
+
+    # No panel reads node metrics: CPU and memory per pod come from the
+    # kubelet's cAdvisor. node-exporter would need hostNetwork, hostPID and
+    # hostPath, and an unauthenticated port 9100 on the host.
+    nodeExporter:
+      enabled: false
+
+    grafana:
+      # The tickets dashboard is ours (dashboard-tickets.yaml); the stock
+      # ones depend on the recording rules turned off above.
+      defaultDashboardsEnabled: false
+      # Created by hand, never committed: see docs/runbooks/monitoring.md.
+      admin:
+        existingSecret: grafana-admin
+      grafana.ini:
+        server:
+          root_url: https://grafana.tickets.philipzachariasson.dev
+        analytics:
+          reporting_enabled: false
+          check_for_updates: false
+      ingress:
+        enabled: true
+        ingressClassName: traefik
+        annotations:
+          cert-manager.io/cluster-issuer: letsencrypt-prod
+        hosts:
+          - grafana.tickets.philipzachariasson.dev
+        tls:
+          - hosts:
+              - grafana.tickets.philipzachariasson.dev
+            secretName: grafana-tls
+      sidecar:
+        datasources:
+          alertmanager:
+            enabled: false
+      additionalDataSources:
+        - name: Loki
+          uid: loki
+          type: loki
+          access: proxy
+          url: http://loki.monitoring:3100
+      # 256Mi was OOMKilled while Grafana ran its database migrations at
+      # its first start.
+      resources:
+        requests:
+          cpu: 50m
+          memory: 192Mi
+        limits:
+          memory: 512Mi
