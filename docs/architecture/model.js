@@ -10,7 +10,7 @@ window.ARCH_MODEL = {
   // Extras polish of a part that is already on the map (78, 80, 81), so an
   // open extra does not keep a finished node "In progress".
   // Any other issue that no node lists shows up under "Not on the map".
-  unmappedOnPurpose: [2, 20, 26, 27, 36, 44, 46, 48, 57, 63, 64, 78, 80, 81],
+  unmappedOnPurpose: [2, 20, 26, 27, 36, 44, 46, 48, 57, 63, 64, 78, 80, 81, 83],
 
   views: [
     {
@@ -275,11 +275,11 @@ window.ARCH_MODEL = {
       summary: 'Turns a reserved ticket into a sold one. The UNIQUE constraint on purchases.ticket_id makes a double sale impossible.',
       details: [
         'Takes the ticket number and the reservation token; only an active reservation with the matching token can be bought.',
-        'One statement marks the ticket sold and inserts the purchase, so both happen or neither does (ADR 0010).',
+        'One statement marks the ticket sold and inserts the purchase, so both happen or neither does (ADR 0011).',
         '201 with the purchase, 409 for an unknown, expired, sold or wrong-token reservation, without saying which.',
       ],
       files: ['backend/src/modules/purchases/route.ts', 'backend/src/modules/purchases/repository.ts', 'backend/test/unit/purchases.test.ts', 'backend/test/integration/purchaseConcurrency.test.ts'],
-      adrs: ['0002-row-per-ticket-with-skip-locked', '0009-reservation-token-instead-of-login', '0010-sold-status-written-with-the-purchase'],
+      adrs: ['0002-row-per-ticket-with-skip-locked', '0009-reservation-token-instead-of-login', '0011-sold-status-written-with-the-purchase'],
     },
     {
       id: 'idempotency',
@@ -388,7 +388,7 @@ window.ARCH_MODEL = {
       summary: 'One row per purchase. UNIQUE on ticket_id lets the database refuse a second sale of the same ticket.',
       details: ['purchased_at defaults to now(). The idempotency key arrives with #29.'],
       files: ['backend/db/migrations/20261029095419_create_purchases.sql'],
-      adrs: ['0002-row-per-ticket-with-skip-locked', '0010-sold-status-written-with-the-purchase'],
+      adrs: ['0002-row-per-ticket-with-skip-locked', '0011-sold-status-written-with-the-purchase'],
     },
     {
       id: 'queue-worker',
@@ -417,6 +417,9 @@ window.ARCH_MODEL = {
       issues: [],
       statusOverride: { status: 'done', reason: 'In use since the first PR; not tracked as an issue.' },
       summary: 'One issue, one branch, one PR. The other person reviews; the PR says Closes #n.',
+      details: [
+        'CI runs twice: on the PR, where build makes the images without pushing them and deploy is skipped, and again on main after the merge, where build pushes and deploy runs.',
+      ],
       files: ['.github/pull_request_template.md'],
     },
     {
@@ -429,7 +432,11 @@ window.ARCH_MODEL = {
       sub: 'main needs green CI',
       milestone: 'G',
       issues: [21],
-      summary: 'Requires a passing CI run and a review before a PR can merge. Only the repo owner (Jennifer) can turn it on.',
+      summary: 'No direct pushes to main: a PR merges only with one approving review and green lint, test and build checks.',
+      details: [
+        'e2e is required too, indirectly: build waits for it.',
+        'A new commit dismisses earlier approvals, the branch must be up to date with main, and nobody can bypass the rules, admins included.',
+      ],
     },
     {
       id: 'lint',
@@ -454,7 +461,7 @@ window.ARCH_MODEL = {
       sub: 'typecheck + unit tests',
       milestone: 'G',
       issues: [6, 14],
-      summary: 'Typechecks the backend and runs the unit tests in backend/test/unit, which need no database. #14 adds unit tests of the service logic.',
+      summary: 'Typechecks the backend and runs the unit tests in backend/test/unit, which need no database, then the integration tests. Also typechecks and tests the frontend.',
       files: ['.github/workflows/ci.yml', 'backend/test/unit/parseTicketNumbers.test.ts'],
     },
     {
@@ -470,6 +477,7 @@ window.ARCH_MODEL = {
       summary:
         'bun run test:integration starts a throwaway Postgres with Testcontainers, runs the migrations and tests the API against it, locally and in Actions. One test fires 200 parallel reservations at 20 tickets and checks that exactly 20 succeed with no duplicates.',
       details: [
+        'Runs inside the test job, after the unit tests, not as a job of its own.',
         'One container for the whole run, preloaded by test/integration/setup.ts. Each test empties the tickets table and inserts only the tickets it needs.',
         'The tests refuse to run without the preload, so they can never empty the dev database from compose.yaml.',
       ],
@@ -516,7 +524,7 @@ window.ARCH_MODEL = {
       kind: 'ci',
       label: 'Manifest check',
       sub: 'validate k8s/',
-      milestone: 'G',
+      milestone: 'Extras',
       issues: [43],
       summary: 'Validates the Kubernetes manifests in CI, so a broken manifest fails the PR instead of the deploy.',
     },
@@ -530,7 +538,7 @@ window.ARCH_MODEL = {
       sub: 'backend + frontend',
       milestone: 'G',
       issues: [6],
-      summary: 'Builds both images in a matrix after lint and test pass, with one build cache per image.',
+      summary: 'Builds both images in a matrix after lint, test and e2e pass, with one build cache per image.',
       details: ['On a PR the images are built but not pushed.'],
       files: ['.github/workflows/ci.yml'],
     },
@@ -711,7 +719,7 @@ window.ARCH_MODEL = {
       label: 'Normal + spike runs',
       sub: '50,000 booking attempts',
       milestone: 'Extras',
-      issues: [30],
+      issues: [30, 86],
       summary:
         'Documented runs with a reset script: 50,000 booking attempts over 15 min (normal) and over 6 min with peaks (spike). Check: at most 5,000 sold, 0 duplicates.',
     },
@@ -734,11 +742,14 @@ window.ARCH_MODEL = {
       row: 1,
       kind: 'k8s',
       label: 'Cluster',
-      sub: 'backend + Postgres',
+      sub: 'tickets namespace',
       milestone: 'G',
       issues: [4, 5, 8],
-      summary: 'The running system: the backend pods and Postgres in the tickets namespace on k3s.',
-      details: ['Run kubectl top nodes on 10-30: above about 80 % RAM, upgrade the VPS.'],
+      summary: 'The running system: the backend, the frontend and Postgres in the tickets namespace on k3s.',
+      details: [
+        'On 2026-10-29, with the monitoring stack running and the app idle, the node used 3,540 Mi (44 %) of its 8 GB, well under the 80 % at which we would upgrade the VPS. Measured again under load in #25.',
+      ],
+      files: ['docs/runbooks/monitoring.md'],
       adrs: ['0004-separate-contabo-vps'],
     },
     {
@@ -760,7 +771,7 @@ window.ARCH_MODEL = {
       row: 0,
       kind: 'ops',
       label: 'Prometheus',
-      sub: '2–3 days retention',
+      sub: '3 days retention',
       milestone: 'G',
       issues: [18],
       summary:
@@ -816,7 +827,7 @@ window.ARCH_MODEL = {
       sub: 'grafana.<domain>',
       milestone: 'G',
       issues: [18],
-      summary: 'One dashboard with metrics and logs, shown in the defence and linked from the README.',
+      summary: 'One dashboard, Tickets, with metrics and logs, shown in the defence.',
       details: [
         'Panels: requests per second, response times (p50, p95, p99), responses by status code and the 5xx rate from Traefik; backend pods and HPA replicas from kube-state-metrics; CPU and memory per pod from cAdvisor; logs from Loki.',
         'In an autoscaling run the sources show cause, reaction and effect: CPU per pod rises, the HPA raises its desired replicas, and response times fall again.',
@@ -898,7 +909,7 @@ window.ARCH_MODEL = {
     { from: 'backend', to: 'ep-reserve' },
     { from: 'backend', to: 'ep-purchase' },
     { from: 'ep-purchase', to: 'idempotency' },
-    { from: 'idempotency', to: 'rate-limit' },
+    { from: 'backend', to: 'rate-limit' },
     { from: 'ep-list', to: 'postgres', label: 'SQL' },
     { from: 'ep-reserve', to: 'postgres', label: 'SQL' },
     { from: 'ep-purchase', to: 'postgres', label: 'SQL' },
