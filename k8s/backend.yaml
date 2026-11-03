@@ -12,11 +12,21 @@ spec:
   selector:
     matchLabels:
       app: backend
+  # A new pod must be ready before an old one goes, so a rollout never runs
+  # with fewer ready pods than the HPA asks for (ADR 0015).
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   template:
     metadata:
       labels:
         app: backend
     spec:
+      # Counts from the start of preStop, so it must cover the 10 s sleep plus
+      # the drain; requests take milliseconds. After it, Kubernetes sends SIGKILL.
+      terminationGracePeriodSeconds: 30
       containers:
         - name: backend
           # k8s/deploy.sh replaces IMAGE_TAG with the commit SHA (ADR 0006).
@@ -47,6 +57,13 @@ spec:
               port: http
             periodSeconds: 10
             failureThreshold: 3
+          # Keeps serving while the removal from the EndpointSlice reaches
+          # Traefik; only then does SIGTERM start the drain in server.ts.
+          # The built-in sleep action needs no sleep binary in the image.
+          lifecycle:
+            preStop:
+              sleep:
+                seconds: 10
           resources:
             requests:
               cpu: 100m

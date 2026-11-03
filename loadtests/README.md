@@ -21,6 +21,16 @@ For type checking and autocomplete in the editor, run `bun install` in `loadtest
 
 The run fails if more than 1% of requests fail, if p95 response time is over 500 ms, or if any purchase of a fresh reservation is refused (`purchase_conflicts`). A 409 on `POST /reservations` means sold out and counts as an expected answer, not a failure.
 
+## Rollout under load
+
+This shows that a backend rollout fails no requests ([ADR 0015](../docs/adr/0015-zero-downtime-rollout.md), #23). Start a `low` run as above, and while it runs, replace the backend pods from the server:
+
+```bash
+ssh root@<server-ip> 'kubectl -n tickets rollout restart deployment/backend && kubectl -n tickets rollout status deployment/backend'
+```
+
+At 2 booking attempts per second one restart sends few requests to a terminating pod, so restart 3–4 times in the 5-minute run, each after the previous one has finished. A real deploy from CI (a merge, or a re-run of the deploy job) counts as one of them. Then `http_req_failed` in the k6 summary must be 0, stricter than the 1% threshold, and the Traefik 5xx panel on the **Tickets** dashboard must stay empty for the run.
+
 ## After a run
 
 Check the database: sold tickets and purchases must be equal, at most 5,000, with no duplicates and both `duplicate_purchases` and `sold_without_purchase_or_reverse` at 0.
