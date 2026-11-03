@@ -129,7 +129,7 @@ sed 's/IMAGE_TAG/<tag>/' k8s/backend.yaml | ssh root@<server-ip> 'kubectl apply 
 
 - The Ingress serves `api.<domain>` with a `letsencrypt-prod` certificate in the secret `backend-tls`. It was first issued from staging, then switched to prod, on 2026-10-22.
 - Readiness and liveness probes call `/health` on port 3000, so a pod gets traffic only once the app answers and is restarted if it stops answering.
-- Plain HTTP is not redirected to HTTPS yet. Browsers use HTTPS anyway, since `.dev` is on the HSTS preload list, but `curl` and k6 do not.
+- Plain HTTP gets a permanent redirect to HTTPS on every host, set in [`k8s/cluster/traefik-config.yaml`](../../k8s/cluster/traefik-config.yaml) (#98). `allowACMEByPass` keeps Let's Encrypt's HTTP-01 challenge out of the redirect: in a local test on 2026-11-03 with Traefik 3.7.13, the version in k3s `v1.37.1+k3s1`, the challenge path answered 301 without it and reached its router with it.
 
 ### The cdn page
 
