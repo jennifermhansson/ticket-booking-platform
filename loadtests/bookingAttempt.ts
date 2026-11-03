@@ -7,7 +7,9 @@ const BASE_URL = __ENV.BASE_URL ?? 'https://api.tickets.philipzachariasson.dev'
 const PROFILE = __ENV.PROFILE ?? 'low'
 const PEAK_RATE = Number(__ENV.PEAK_RATE ?? 40)
 if (!Number.isInteger(PEAK_RATE) || PEAK_RATE < 1) {
-  throw new Error(`PEAK_RATE must be a positive integer, got "${__ENV.PEAK_RATE}"`)
+  throw new Error(
+    `PEAK_RATE must be a positive integer, got "${__ENV.PEAK_RATE}"`,
+  )
 }
 
 // Load is counted in booking attempts per second, the unit GLOSSARY.md uses
