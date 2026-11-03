@@ -43,7 +43,9 @@ const profiles: Record<string, Scenario> = {
       { target: 2, duration: '30s' },
       { target: 2, duration: '4m' },
     ],
-    preAllocatedVUs: 50,
+    // A rollout slows responses, so more VUs are busy at once; one k6 has to
+    // start mid-run drops iterations while it starts (2 in #25's second run).
+    preAllocatedVUs: 100,
     maxVUs: 300,
   },
 }

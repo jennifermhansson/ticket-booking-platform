@@ -115,10 +115,11 @@ spec:
           access: proxy
           url: http://loki.monitoring:3100
       # 256Mi was OOMKilled while Grafana ran its database migrations at
-      # its first start.
+      # its first start, and 512Mi while the tickets dashboard refreshed
+      # every 10s during a high-load k6 run.
       resources:
         requests:
           cpu: 50m
           memory: 192Mi
         limits:
-          memory: 512Mi
+          memory: 1Gi
