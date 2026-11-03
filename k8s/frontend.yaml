@@ -78,3 +78,30 @@ spec:
                 name: frontend
                 port:
                   name: http
+---
+# The page itself, on the bare <domain>. Its own certificate, so adding this
+# host does not reissue cdn.'s. Exact: the page is the only thing served here;
+# nginx picks the server block by the Host header (ADR 0016).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: frontend-page
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - tickets.philipzachariasson.dev
+      secretName: frontend-page-tls
+  rules:
+    - host: tickets.philipzachariasson.dev
+      http:
+        paths:
+          - path: /
+            pathType: Exact
+            backend:
+              service:
+                name: frontend
+                port:
+                  name: http

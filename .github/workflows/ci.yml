@@ -139,5 +139,12 @@ jobs:
         run: curl --fail --silent --show-error --retry 5 --retry-delay 3 https://api.tickets.philipzachariasson.dev/health
       # --retry-all-errors also retries TLS errors: until cert-manager has issued
       # a new host's certificate, Traefik serves its self-signed default one.
-      - name: Check the cdn page over HTTPS
+      # The page must be revalidated on every load, or visitors keep an
+      # index.html that names assets a new image no longer has (ADR 0016).
+      - name: Check the page on <domain> over HTTPS
+        run: |
+          curl --fail --silent --show-error --head --retry 20 --retry-delay 6 --retry-all-errors https://tickets.philipzachariasson.dev/ \
+            | grep --ignore-case '^cache-control: no-cache'
+      # cdn.<domain>/ now redirects to the page; a 301 passes --fail.
+      - name: Check cdn over HTTPS
         run: curl --fail --silent --show-error --output /dev/null --retry 20 --retry-delay 6 --retry-all-errors https://cdn.tickets.philipzachariasson.dev/

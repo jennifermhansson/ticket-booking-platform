@@ -23,7 +23,7 @@ Two people share this repo, each with their own Claude. Claude's memory is perso
 - Module slice: `backend/src/modules/<name>/{route,controller,service,repository,mapper,schema,types}.ts`.
 - Database: PostgreSQL via Bun's built-in client (`import { sql } from 'bun'`).
 - Migrations: dbmate, with plain SQL files in `backend/db/migrations/`, run as a Kubernetes Job before each rollout ([ADR 0007](docs/adr/0007-migrations-with-dbmate-as-a-job.md)).
-- Frontend: React + TypeScript + Vite, built to static files served from `cdn.<domain>`.
+- Frontend: React + TypeScript + Vite, built to static files: the page on `<domain>`, its hashed assets on `cdn.<domain>` ([ADR 0016](docs/adr/0016-page-on-domain-assets-on-cdn.md)).
 - Infrastructure: single-node k3s on a VPS (Traefik, cert-manager), images on GHCR, deploys from GitHub Actions.
 - Load testing: k6.
 - Layout: monorepo with `backend/`, `frontend/`, `k8s/`, `loadtests/`.

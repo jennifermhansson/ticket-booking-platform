@@ -136,6 +136,7 @@ sed 's/IMAGE_TAG/<tag>/' k8s/backend.yaml | ssh root@<server-ip> 'kubectl apply 
 [`k8s/frontend.yaml`](../../k8s/frontend.yaml) holds the frontend's Deployment, Service and Ingress, built and deployed the same way as the backend (#7). [ADR 0008](../adr/0008-static-files-from-nginx-pod.md) explains why the files get a pod of their own. The image is nginx (`nginxinc/nginx-unprivileged`, non-root, port 8080) with `frontend/public/` copied in at build time, so a changed page ships as a new image and the deploy Role needs no ConfigMaps.
 
 - The Ingress serves `cdn.<domain>` with a `letsencrypt-prod` certificate in the secret `frontend-tls`, issued straight from prod, since the prod issuer was already proven on `api.<domain>`.
+- A second Ingress, `frontend-page`, serves the page on the bare `<domain>` with its own `letsencrypt-prod` certificate in `frontend-page-tls` (#56). `frontend/nginx.conf` picks what to serve by host: `index.html` on `<domain>`, `/assets/` on `cdn.<domain>`, whose `/` redirects to the page ([ADR 0016](../adr/0016-page-on-domain-assets-on-cdn.md)).
 - Readiness and liveness probes call `/` on port 8080.
 - The GHCR package `ticket-booking-platform-frontend` is public, like the backend's, so k3s pulls it without an `imagePullSecret`. If a new package ever comes up private, the deploy fails with `ImagePullBackOff`: the owner (Jennifer) makes it public in its settings and re-runs the failed jobs.
 
