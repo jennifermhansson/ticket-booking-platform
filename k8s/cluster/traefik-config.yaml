@@ -15,6 +15,18 @@ spec:
         # to Traefik's ClusterIP, not to the NodePorts, so they only add
         # open ports. Recheck before setting externalTrafficPolicy: Local.
         allocateLoadBalancerNodePorts: false
+    # Sends plain HTTP to HTTPS. The redirect outranks every router on the
+    # entry point, so without the bypass it would also catch Let's Encrypt's
+    # HTTP-01 challenge, which cert-manager answers on port 80.
+    ports:
+      web:
+        allowACMEByPass: true
+        http:
+          redirections:
+            entryPoint:
+              to: websecure
+              scheme: https
+              permanent: true
     # Requests per second, response times and status codes per Kubernetes
     # service, for the Grafana dashboard (ADR 0013). Apply after
     # kube-prometheus-stack: the chart skips the ServiceMonitor until its CRD
