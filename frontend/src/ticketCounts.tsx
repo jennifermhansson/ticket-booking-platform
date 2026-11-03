@@ -1,30 +1,16 @@
-import { useEffect, useState } from 'react'
-import { countTickets, TICKET_STATUSES, type TicketStatus } from './api'
+import { TICKET_STATUSES } from './api'
+import type { Counts } from './useTicketMap'
 
-type Counts = Record<TicketStatus, number>
-
-export function TicketCounts({ version }: { version: number }) {
-  const [counts, setCounts] = useState<Counts | null>(null)
-  const [error, setError] = useState(false)
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: version is App's signal to fetch again
-  useEffect(() => {
-    let current = true
-    Promise.all(TICKET_STATUSES.map(countTickets))
-      .then(([available, reserved, sold]) => {
-        if (current) {
-          setCounts({ available, reserved, sold })
-          setError(false)
-        }
-      })
-      .catch(() => current && setError(true))
-    return () => {
-      current = false
-    }
-  }, [version])
-
-  if (error) return <p className="error">Could not load the ticket counts.</p>
-  if (!counts) return <p>Loading tickets…</p>
+export function TicketCounts({ counts }: { counts: Counts | null }) {
+  if (!counts) {
+    return (
+      <div className="counts" aria-hidden="true">
+        {TICKET_STATUSES.map((status) => (
+          <div key={status} className="skeleton skeleton-count" />
+        ))}
+      </div>
+    )
+  }
 
   return (
     <dl className="counts">

@@ -2,17 +2,6 @@
 export const TICKET_STATUSES = ['available', 'reserved', 'sold'] as const
 export type TicketStatus = (typeof TICKET_STATUSES)[number]
 
-export type Ticket = {
-  ticketNumber: string
-  status: TicketStatus
-  reservedUntil: string | null
-}
-
-export type TicketPage = {
-  total: number
-  tickets: Ticket[]
-}
-
 export type Reservation = {
   ticketNumber: string
   reservedUntil: string
@@ -27,8 +16,6 @@ export type Purchase = {
 // A 409 is an expected answer (no ticket left, reservation gone), so it is a
 // result the UI shows, not an error it has to catch.
 export type Result<T> = { ok: true; value: T } | { ok: false; message: string }
-
-export const PAGE_SIZE = 100
 
 const API_URL = import.meta.env.VITE_API_URL
 
@@ -52,21 +39,18 @@ async function requestResult<T>(
   return { ok: true, value: (await res.json()) as T }
 }
 
-export function listTickets(
-  status: TicketStatus | undefined,
-  offset: number,
-): Promise<TicketPage> {
-  const query = new URLSearchParams({
-    limit: String(PAGE_SIZE),
-    offset: String(offset),
-  })
-  if (status) query.set('status', status)
-  return request(`/tickets?${query}`)
+// fetch rejects with a TypeError when no response came back at all, and
+// request() throws a plain Error for a 5xx.
+export function describeError(error: unknown): string {
+  return error instanceof TypeError
+    ? "Can't reach the ticket service. Check your connection and try again."
+    : 'The ticket service had a problem. Try again.'
 }
 
-export async function countTickets(status: TicketStatus): Promise<number> {
-  const page = await request<TicketPage>(`/tickets?status=${status}&limit=1`)
-  return page.total
+// One character per ticket in ticket number order: a, r or s.
+export async function getTicketMap(): Promise<string> {
+  const map = await request<{ statuses: string }>('/tickets/map')
+  return map.statuses
 }
 
 export function reserveTicket(): Promise<Result<Reservation>> {

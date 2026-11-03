@@ -144,13 +144,14 @@ window.ARCH_MODEL = {
       summary:
         'An unprivileged nginx image with the static files copied in at build time, behind its own Service and Ingress.',
       details: [
-        'A minimal React + Vite app (#13): ticket counts per state, a paged ticket list, and reserve and buy with a countdown.',
+        'A React + Vite app (#13, #78): an event page with ticket counts per state, a live map of every ticket, and reserve and buy with a countdown and a receipt.',
+        'It polls GET /tickets/map every 5 s and draws the map on a canvas. The reservation lives in sessionStorage, so it survives a reload.',
         'The Docker build runs vite build and copies dist/ into nginx; the API address comes from .env.production at build time.',
         'A changed page ships as a new image, so the deploy Role needs no ConfigMaps (ADR 0008).',
         'frontend/nginx.conf answers both hosts: index.html on <domain>, /assets/ on cdn.<domain> (#56, ADR 0016).',
         'Readiness and liveness probes on /, which land on the page server (the default_server).',
       ],
-      files: ['k8s/frontend.yaml', 'frontend/Dockerfile', 'frontend/nginx.conf', 'frontend/index.html', 'frontend/src/bookingPanel.tsx', 'frontend/src/api.ts'],
+      files: ['k8s/frontend.yaml', 'frontend/Dockerfile', 'frontend/nginx.conf', 'frontend/index.html', 'frontend/src/bookingPanel.tsx', 'frontend/src/ticketMap.tsx', 'frontend/src/api.ts'],
       adrs: ['0008-static-files-from-nginx-pod', '0016-page-on-domain-assets-on-cdn'],
     },
     {
@@ -261,8 +262,9 @@ window.ARCH_MODEL = {
       details: [
         'Returns { total, tickets }, ordered by ticket number. limit defaults to 100, at most 500.',
         'The status is derived in SQL on every read, so no row is rewritten when a reservation expires.',
+        'GET /tickets/map (#78) returns { statuses }, one character per ticket (a, r or s) from one snapshot, so the page draws all 5,000 from a single request.',
       ],
-      files: ['backend/src/modules/tickets/route.ts', 'backend/src/modules/tickets/repository.ts', 'backend/test/unit/tickets.test.ts'],
+      files: ['backend/src/modules/tickets/route.ts', 'backend/src/modules/tickets/repository.ts', 'backend/test/unit/tickets.test.ts', 'backend/test/integration/ticketMap.test.ts'],
       adrs: ['0002-row-per-ticket-with-skip-locked'],
     },
     {
