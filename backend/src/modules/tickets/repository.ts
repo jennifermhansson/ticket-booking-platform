@@ -30,6 +30,17 @@ export async function listTickets(
   return { rows, total: Number(rows[0]?.total ?? 0) }
 }
 
+// One character per ticket in ticket number order, from one snapshot, so the
+// page can draw the whole map from a single small response.
+export async function getTicketMap(): Promise<string> {
+  const rows: { statuses: string | null }[] = await sql`
+    SELECT string_agg(left(${effectiveStatus}, 1), '' ORDER BY ticket_number) AS statuses
+    FROM tickets
+  `
+
+  return rows[0]?.statuses ?? ''
+}
+
 // One statement, so it is its own transaction. SKIP LOCKED lets concurrent
 // reservations each lock a different free row instead of queueing behind the
 // same one (ADR 0002). A new token replaces the one from an expired

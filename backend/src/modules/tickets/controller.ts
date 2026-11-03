@@ -8,6 +8,10 @@ export async function listTickets(
   return service.listTickets(request.query)
 }
 
+export async function getTicketMap() {
+  return service.getTicketMap()
+}
+
 export async function reserveTicket(
   _request: FastifyRequest,
   reply: FastifyReply,
