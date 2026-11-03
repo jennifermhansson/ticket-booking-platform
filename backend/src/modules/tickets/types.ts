@@ -19,6 +19,11 @@ export type TicketPage = {
   tickets: Ticket[]
 }
 
+// One character per ticket: a(vailable), r(eserved) or s(old).
+export type TicketMap = {
+  statuses: string
+}
+
 export type ListTicketsQuery = {
   status?: TicketStatus
   limit: number

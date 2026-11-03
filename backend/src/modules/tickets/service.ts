@@ -1,6 +1,11 @@
 import { toReservation, toTicket } from './mapper'
 import * as repository from './repository'
-import type { ListTicketsQuery, Reservation, TicketPage } from './types'
+import type {
+  ListTicketsQuery,
+  Reservation,
+  TicketMap,
+  TicketPage,
+} from './types'
 
 const DEFAULT_RESERVATION_SECONDS = 300
 
@@ -27,6 +32,10 @@ export async function listTickets(
 ): Promise<TicketPage> {
   const { rows, total } = await repository.listTickets(query)
   return { total, tickets: rows.map(toTicket) }
+}
+
+export async function getTicketMap(): Promise<TicketMap> {
+  return { statuses: await repository.getTicketMap() }
 }
 
 export async function reserveTicket(): Promise<Reservation | null> {

@@ -32,6 +32,18 @@ export const listTicketsSchema = {
   },
 } as const
 
+export const ticketMapSchema = {
+  response: {
+    200: {
+      type: 'object',
+      required: ['statuses'],
+      properties: {
+        statuses: { type: 'string' },
+      },
+    },
+  },
+} as const
+
 export const reserveTicketSchema = {
   response: {
     201: {

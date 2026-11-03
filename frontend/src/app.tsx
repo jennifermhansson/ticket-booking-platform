@@ -1,27 +1,44 @@
-import { useCallback, useEffect, useState } from 'react'
 import { BookingPanel } from './bookingPanel'
+import { EventHero } from './eventHero'
 import { TicketCounts } from './ticketCounts'
-import { TicketList } from './ticketList'
+import { TicketMap } from './ticketMap'
+import { useBooking } from './useBooking'
+import { countStatuses, useTicketMap } from './useTicketMap'
 
 export function App() {
-  // Bumped after every reservation and purchase, and every few seconds, so
-  // the counts and the list fetch again and show the new state, also while
-  // other customers (or a k6 run) buy. Stable, since BookingPanel calls it
-  // from an effect.
-  const [version, setVersion] = useState(0)
-  const refresh = useCallback(() => setVersion((v) => v + 1), [])
-
-  useEffect(() => {
-    const timer = setInterval(refresh, 5000)
-    return () => clearInterval(timer)
-  }, [refresh])
+  const { statuses, failed, refresh } = useTicketMap()
+  const booking = useBooking(refresh)
+  const counts = statuses === null ? null : countStatuses(statuses)
 
   return (
-    <main>
-      <h1>Ticket booking</h1>
-      <TicketCounts version={version} />
-      <BookingPanel onChange={refresh} />
-      <TicketList version={version} />
-    </main>
+    <>
+      <EventHero booking={booking} />
+      <main className="layout">
+        <BookingPanel booking={booking} onExpire={refresh} />
+        <section className="card" aria-labelledby="availability">
+          <h2 id="availability">Live availability</h2>
+          {failed && (
+            <p className="notice" role="status">
+              Can't reach the ticket service.{' '}
+              {statuses === null
+                ? 'Trying again every few seconds.'
+                : 'Showing the last known state and trying again.'}
+            </p>
+          )}
+          <TicketCounts counts={counts} />
+          <TicketMap statuses={statuses} counts={counts} />
+        </section>
+      </main>
+      <footer className="footer">
+        <p>
+          A demo of a platform that sells 5,000 numbered tickets under heavy
+          load without selling one twice. The event is made up: no real tickets
+          and no payment.{' '}
+          <a href="https://github.com/jennifermhansson/ticket-booking-platform">
+            Source on GitHub
+          </a>
+        </p>
+      </footer>
+    </>
   )
 }
