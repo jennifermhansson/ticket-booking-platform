@@ -43,9 +43,10 @@ spec:
             # How long a reservation holds a ticket. Lower it for load and spike tests.
             - name: RESERVATION_SECONDS
               value: "300"
-            # The only origin whose browser calls CORS lets through (#13).
+            # The only origin whose browser calls CORS lets through: the page's,
+            # not cdn.'s, since the app's JS runs in the page's origin (#56).
             - name: CORS_ORIGINS
-              value: https://cdn.tickets.philipzachariasson.dev
+              value: https://tickets.philipzachariasson.dev
           readinessProbe:
             httpGet:
               path: /health

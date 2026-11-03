@@ -1,6 +1,6 @@
 # Static files from a separate nginx pod behind Traefik
 
-`cdn.<domain>` is served by its own Deployment: an `nginxinc/nginx-unprivileged` image with the static files copied in at build time, behind its own Service and Ingress. Traefik, the ingress controller k3s ships, routes `cdn.<domain>` to it the same way it routes `api.<domain>` to the backend. Traefik only terminates TLS and picks a Service by host; it cannot serve our files, so something in the cluster has to hold them and answer HTTP, and nginx does that with no config of our own.
+`cdn.<domain>` is served by its own Deployment: an `nginxinc/nginx-unprivileged` image with the static files copied in at build time, behind its own Service and Ingress. Traefik, the ingress controller k3s ships, routes `cdn.<domain>` to it the same way it routes `api.<domain>` to the backend. Traefik only terminates TLS and picks a Service by host; it cannot serve our files, so something in the cluster has to hold them and answer HTTP, and nginx does that with no config of our own. Since #56 the image carries an nginx config of its own, to split the page and the assets by host ([ADR 0016](0016-page-on-domain-assets-on-cdn.md)).
 
 ## Considered options
 
