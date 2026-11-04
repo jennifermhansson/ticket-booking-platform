@@ -1,5 +1,7 @@
 # ticket-booking-platform
 
+Deployed live during the defence on 2026-11-04.
+
 How the system fits together, and what is built so far: open the [architecture map](docs/architecture/README.md).
 
 ## Run the backend locally
