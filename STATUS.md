@@ -1,8 +1,8 @@
 # Status
 
-Last updated: 2026-10-29 (changes only when the phase does)
+Last updated: 2026-11-06 (changes only when the phase does)
 
-**Phase:** 1 (G criteria), step 4: operations (2026-10-29 → 10-30): backups (#17), metrics and logs (#18) and a low-load k6 script (#19). The app core (#10–#12), unit tests (#14) and integration tests (#15) are done. The React frontend (#13) and Playwright e2e tests (#16) are still open and run alongside step 4. When we sit together we pair on the DevOps work (#17, #18, #19) and take #13 and #16 remotely. Every merge to `main` deploys Postgres, runs the migration Job and only then rolls out the backend to `https://api.<domain>` and the frontend to `https://cdn.<domain>`.
+**Phase:** after the defence, before the code submission. All issues in the `G` and `VG` milestones are closed, and the oral defence was held on 2026-11-04. What remains is the code submission on 2026-11-08; the open issues in `Extras` are not needed for the grading criteria. Every merge to `main` deploys Postgres, runs the migration Job and only then rolls out the backend to `https://api.<domain>` and the frontend, with the page on `https://<domain>` and its assets on `https://cdn.<domain>`.
 
 **What's next, who owns it and what's blocked live in GitHub Issues**, not here:
 
@@ -20,5 +20,5 @@ Last updated: 2026-10-29 (changes only when the phase does)
 
 ## Key dates
 
-- 2026-11-04: oral defence; the system is demoed as it is that day
+- 2026-11-04: oral defence (held)
 - 2026-11-08: code submission
