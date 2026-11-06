@@ -105,9 +105,10 @@ Run every step in Git Bash on your laptop, in one window, since the variables on
    echo "SELECT (SELECT count(*) FROM tickets) AS tickets, (SELECT count(*) FROM tickets WHERE status = 'sold') AS sold, (SELECT count(*) FROM purchases) AS purchases;" | ssh root@$IP 'kubectl -n tickets exec -i postgres-0 -- psql -U postgres -d tickets'
    ```
 
-7. **Re-run the latest deploy.** The dump includes `schema_migrations`, so the migration Job applies only migrations newer than the dump ([ADR 0007](../adr/0007-migrations-with-dbmate-as-a-job.md)), and the rollout brings the backend back. Without CI, run the deploy by hand ([server-setup.md](server-setup.md#migrations-and-the-deploy-script)).
+7. **Scale the backend back up and re-run the latest deploy.** A deploy alone does not bring the backend back: the manifest has no `replicas`, since the HPA owns the count, so `kubectl apply` keeps the 0 from step 3, and the HPA does not scale a Deployment that was set to 0 by hand (tested on 2026-11-06, #108). From 2 pods the HPA takes over again. The dump includes `schema_migrations`, so the migration Job applies only migrations newer than the dump ([ADR 0007](../adr/0007-migrations-with-dbmate-as-a-job.md)); if there are any, the pods run against the older schema until the Job has finished. Without CI, run the deploy by hand ([server-setup.md](server-setup.md#migrations-and-the-deploy-script)).
 
    ```
+   ssh root@$IP 'kubectl -n tickets scale deployment/backend --replicas=2'
    RUN=$(gh run list --branch main --limit 1 --json databaseId --jq '.[0].databaseId'); gh run rerun "$RUN"
    gh run watch "$RUN"
    ```
