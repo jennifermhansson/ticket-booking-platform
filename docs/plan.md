@@ -1,5 +1,7 @@
 # Project plan
 
+This is the historical plan: it records how the work was laid out and why, written before the work was done. The current state is in [STATUS.md](../STATUS.md) and the GitHub Issues.
+
 ## Context
 
 We build the ticket booking system from Ahmad's project proposal ("Distribuerat biljettbokningssystem"). The course's grading criteria ("Praktisk examination") decide what earns the grade, and they set the order of work:
